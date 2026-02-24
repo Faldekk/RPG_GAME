@@ -5,8 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using RPG_GAME.Model;
 using RPG_GAME.UI;
-using RPG_GAME.Model;
-using RPG_GAME.UI;
 
 namespace RPG_GAME.App
 {

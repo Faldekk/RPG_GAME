@@ -14,7 +14,9 @@ namespace RPG_GAME.App
         Down,
         Left,
         Right,
-        Quit
+        Quit,
+        Pickup,
+        Drop
     }
 
     public class Input
@@ -31,11 +33,13 @@ namespace RPG_GAME.App
                 ConsoleKey.A => InputCommand.Left,
                 ConsoleKey.D => InputCommand.Right,
                 ConsoleKey.Q => InputCommand.Quit,
+                ConsoleKey.E => InputCommand.Pickup,
+                ConsoleKey.G => InputCommand.Drop,
                 //Arrow steering for fun 
-                ConsoleKey.UpArrow => InputCommand.Up,
-                ConsoleKey.DownArrow => InputCommand.Down,
-                ConsoleKey.LeftArrow => InputCommand.Left,
-                ConsoleKey.RightArrow => InputCommand.Right,
+                //ConsoleKey.UpArrow => InputCommand.Up,
+                //ConsoleKey.DownArrow => InputCommand.Down,
+                //ConsoleKey.LeftArrow => InputCommand.Left,
+                //ConsoleKey.RightArrow => InputCommand.Right,
                 _ => InputCommand.None
             };
 

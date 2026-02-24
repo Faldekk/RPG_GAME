@@ -1,10 +1,10 @@
 ﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using System;
 
 namespace RPG_GAME.Model
 {
@@ -20,8 +20,17 @@ namespace RPG_GAME.Model
         {
             _tiles = new Tile[Height, Width];
             InitializeTiles();
-
-            Player = new Player(new Vec2(1, 1));
+            var Statistics = new Dictionary<string, int>();
+            Statistics.Add("Strength", 10);
+            Statistics.Add("Dexterity", 10);
+            Statistics.Add("Health", 100);
+            Statistics.Add("Luck", 50);
+            Statistics.Add("Aggression", 25);
+            Statistics.Add("Wisdom", 0);
+            var Income = new Dictionary<string, int>();
+            Income.Add("Coins", 50);
+            Income.Add("Gold", 0);
+            Player = new Player(new Vec2(1, 1),Statistics, Income);
         }
 
         private void InitializeTiles()
