@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Text;
 using RPG_GAME.App;
 
 namespace RPG_GAME
 {
     internal static class Program
     {
+        
         private static void Main()
         {
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Gray;
             Console.CursorVisible = false;
             try
             {
@@ -34,6 +38,7 @@ namespace RPG_GAME
             Console.ResetColor();
             Console.SetCursorPosition(0, Math.Min(Console.CursorTop, Console.BufferHeight - 1));
             Console.WriteLine();
+            
         }
     }
 }

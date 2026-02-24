@@ -21,16 +21,9 @@ namespace RPG_GAME.Model
             _tiles = new Tile[Height, Width];
             InitializeTiles();
             var Statistics = new Dictionary<string, int>();
-            Statistics.Add("Strength", 10);
-            Statistics.Add("Dexterity", 10);
-            Statistics.Add("Health", 100);
-            Statistics.Add("Luck", 50);
-            Statistics.Add("Aggression", 25);
-            Statistics.Add("Wisdom", 0);
             var Income = new Dictionary<string, int>();
-            Income.Add("Coins", 50);
-            Income.Add("Gold", 0);
-            Player = new Player(new Vec2(1, 1),Statistics, Income);
+            var Slots = new List<Items>();
+            Player = new Player(new Vec2(1, 1),Statistics, Income, Slots);
         }
 
         private void InitializeTiles()
@@ -39,14 +32,12 @@ namespace RPG_GAME.Model
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    bool isBorder =
-                        y == 0 || y == Height - 1 ||
-                        x == 0 || x == Width - 1;
-
+                    bool isBorder = x == 0 ||y == 0 || y == Height - 1 || x == Width - 1;
                     _tiles[y, x] = new Tile(isBorder);
+
                 }
             }
-
+            
             // przykładowa ściana w środku
             for (int x = 10; x < 30; x++)
             {

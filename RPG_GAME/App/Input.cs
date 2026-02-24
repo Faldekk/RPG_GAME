@@ -16,7 +16,9 @@ namespace RPG_GAME.App
         Right,
         Quit,
         Pickup,
-        Drop
+        Drop,
+        FirstWeapon,
+        SecondWeapon
     }
 
     public class Input
@@ -35,13 +37,15 @@ namespace RPG_GAME.App
                 ConsoleKey.Q => InputCommand.Quit,
                 ConsoleKey.E => InputCommand.Pickup,
                 ConsoleKey.G => InputCommand.Drop,
+                ConsoleKey.D1 => InputCommand.FirstWeapon,
+                ConsoleKey.D2 => InputCommand.SecondWeapon,
                 //Arrow steering for fun 
                 //ConsoleKey.UpArrow => InputCommand.Up,
                 //ConsoleKey.DownArrow => InputCommand.Down,
                 //ConsoleKey.LeftArrow => InputCommand.Left,
                 //ConsoleKey.RightArrow => InputCommand.Right,
                 _ => InputCommand.None
-            };
+            }
 
         }
     }

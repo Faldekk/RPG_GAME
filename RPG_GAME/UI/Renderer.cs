@@ -12,7 +12,7 @@ namespace RPG_GAME.UI
     public class Renderer
     {
         private readonly ConsoleBuffer _buffer;
-
+        
         public Renderer()
         {
             _buffer = new ConsoleBuffer(World.Height + 2, World.Width + 30);
@@ -21,24 +21,27 @@ namespace RPG_GAME.UI
         public void Render(World world)
         {
             _buffer.Clear();
-
-            // mapa
+            
+            // map render
             for (int y = 0; y < World.Height; y++)
             {
                 for (int x = 0; x < World.Width; x++)
                 {
+
                     char ch = world.GetTile(y, x).IsWall ? '█' : ' ';
+                    
                     _buffer.PutChar(y, x, ch);
+                    
                 }
             }
 
-            // gracz
+            // player att
             var p = world.Player.Pos;
             var s = world.Player.Stats;
             var m = world.Player.Income;
-            _buffer.PutChar(p.Y, p.X, 'X');
+            _buffer.PutChar(p.Y, p.X, '¶');
 
-            // panel boczny
+            // Stat panel and rules fwaeh 
             int panelX = World.Width + 2;
             _buffer.PutString(0, panelX, "Welcome to Dungeons :)");
             _buffer.PutString(1, panelX, "created by Faldekk");
@@ -59,18 +62,7 @@ namespace RPG_GAME.UI
                 itt++;
             }
             itt++;
-            //_buffer.PutString(14, panelX, $"Strength: {s["Strength"]}");
-            //_buffer.PutString(15, panelX, $"Dexterity: {s["Dexterity"]}");
-            //_buffer.PutString(16, panelX, $"Health: {s["Health"]}");
-            //_buffer.PutString(17, panelX, $"Luck: {s["Luck"]}");
-            //_buffer.PutString(18, panelX, $"Aggression: {s["Aggression"]}");
-            //_buffer.PutString(19, panelX, $"Wisdom: {s["Wisdom"]}");
-
-
-
-
-            _buffer.PutString(20, panelX, "Q - quit");
-
+            _buffer.PutString(itt, panelX, "Q - quit");
             _buffer.Flush();
         }
     }
