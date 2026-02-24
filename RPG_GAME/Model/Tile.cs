@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace RPG_GAME.Model
 {
-    internal class Tile
+    public class Tile
     {
+        public bool IsWall { get; }
+
+        public Tile(bool isWall)
+        {
+            IsWall = isWall;
+        }
     }
 }
