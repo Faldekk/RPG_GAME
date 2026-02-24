@@ -31,8 +31,14 @@ namespace RPG_GAME.App
                 ConsoleKey.A => InputCommand.Left,
                 ConsoleKey.D => InputCommand.Right,
                 ConsoleKey.Q => InputCommand.Quit,
+                //Arrow steering for fun 
+                ConsoleKey.UpArrow => InputCommand.Up,
+                ConsoleKey.DownArrow => InputCommand.Down,
+                ConsoleKey.LeftArrow => InputCommand.Left,
+                ConsoleKey.RightArrow => InputCommand.Right,
                 _ => InputCommand.None
             };
+
         }
     }
 }
