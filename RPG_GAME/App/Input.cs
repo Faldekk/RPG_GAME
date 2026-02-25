@@ -45,7 +45,7 @@ namespace RPG_GAME.App
                 //ConsoleKey.LeftArrow => InputCommand.Left,
                 //ConsoleKey.RightArrow => InputCommand.Right,
                 _ => InputCommand.None
-            }
+            };
 
         }
     }

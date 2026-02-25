@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Reflection.Metadata.BlobBuilder;
+using RPG_GAME.Model;
+using RPG_GAME.UI;
 
 namespace RPG_GAME.Model
 {
@@ -33,7 +35,7 @@ namespace RPG_GAME.Model
                 { "Coins", 10 },
                 {"Gold", 0 }
             };
-            List<Items> Slots = slots;
+            Slots = new List<Items>();
             
         }
         public Player(Player player)

@@ -54,9 +54,7 @@ namespace RPG_GAME.App
                 case InputCommand.Quit:
                     _isRunning = false;
                     break;
-                case InputCommand.FirstWeapon:
-
-
+                
             }
         }
     }
