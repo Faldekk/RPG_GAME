@@ -13,14 +13,23 @@ namespace RPG_GAME.Model
         public int Damage { get; set; }
         public bool Both_hands { get; set; }
         public Tuple<int, int>? Position;
+        public int Count;
+        public int Lifespan;
 
-        public Items(string name, string type, int damage, bool both_hands, Tuple<int,int> position) {
-        Name = name;
-        Type = type;
-        Damage = Damage;
-        Both_hands = both_hands;
-        Position = position;
+        public Items(string name, string type, int damage, bool both_hands, Tuple<int, int> position)
+        {
+            Name = name;
+            Type = type;
+            Damage = Damage;
+            Both_hands = both_hands;
+            Position = position;
+            Count = 0;
+            Lifespan = 100;
         }
-        
+        void Attack(int x, int y)
+        {
+
+
+        }
     }
 }

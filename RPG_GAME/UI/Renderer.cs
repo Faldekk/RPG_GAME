@@ -64,25 +64,54 @@ namespace RPG_GAME.UI
                 itt++;
             }
             itt++;
-            if (w[0].Both_hands)
+
+            if (w == null || w.Count == 0)
             {
-                _buffer.PutString(itt, panelX, $"Left hand slot is having 2-handed weapon: {w[0].Name} Type: {w[0].Type} Damage: {w[0].Damage}");
+                _buffer.PutString(itt, panelX, "No weapons yet. Grind more");
             }
-            if (w[1].Both_hands)
+            else
             {
-                _buffer.PutString(itt, panelX, $"Right hand slot is having 2-handed weapon: {w[0].Name} Type: {w[0].Type} Damage: {w[0].Damage}");
+                var left = w.Count > 0 ? w[0] : null;
+                var right = w.Count > 1 ? w[1] : null;
+
+                // jeśli lewy slot ma broń 2-ręczną
+                if (left != null && left.Both_hands)
+                {
+                    _buffer.PutString(itt, panelX,
+                        $"2-handed weapon equipped: {left.Name} Type: {left.Type} Damage: {left.Damage}");
+                }
+                else if (right != null && right.Both_hands)
+                {
+                    _buffer.PutString(itt, panelX,
+                        $"2-handed weapon equipped: {right.Name} Type: {right.Type} Damage: {right.Damage}");
+                }
+                else
+                {
+                    if (left != null)
+                    {
+                        _buffer.PutString(itt, panelX,
+                            $"Left hand: {left.Name} Type: {left.Type} Damage: {left.Damage}");
+                        itt++;
+                    }
+                    else
+                    {
+                        _buffer.PutString(itt, panelX, "Left hand: (empty)");
+                        itt++;
+                    }
+
+                    if (right != null)
+                    {
+                        _buffer.PutString(itt, panelX,
+                            $"Right hand: {right.Name} Type: {right.Type} Damage: {right.Damage}");
+                    }
+                    else
+                    {
+                        _buffer.PutString(itt, panelX, "Right hand: (empty)");
+                    }
+                }
             }
-            else if (w == null) {
-                _buffer.PutString(itt, panelX, $"No weapons yet. Grind more");
-            }
-            else 
-            {
-                    _buffer.PutString(itt, panelX, $"Left hand: {w[0].Name} Type: {w[0].Type} Damage: {w[0].Damage}");
-                    itt++;
-                    _buffer.PutString(itt, panelX, $"Right hand: {w[1].Name} Type: {w[1].Type} Damage: {w[1].Damage}");
-             }
-             itt++;
-            _buffer.PutString(itt, panelX, "Q - quit");
+            itt++;
+            _buffer.PutString(itt++, panelX, "Q - quit");
             _buffer.Flush();
             }
     }
