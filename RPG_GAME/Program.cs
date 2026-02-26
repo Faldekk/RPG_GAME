@@ -33,9 +33,8 @@ namespace RPG_GAME
             var game = new Game();
             game.Run();
 
-       
+
             Console.CursorVisible = true;
-            Console.ResetColor();
             Console.SetCursorPosition(0, Math.Min(Console.CursorTop, Console.BufferHeight - 1));
             Console.WriteLine();
             

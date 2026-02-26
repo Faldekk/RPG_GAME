@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System;
+using RPG_GAME.Model;
+using RPG_GAME.UI;
 
 namespace RPG_GAME.App
 {
@@ -18,7 +20,8 @@ namespace RPG_GAME.App
         Pickup,
         Drop,
         FirstWeapon,
-        SecondWeapon
+        SecondWeapon,
+        Shoot
     }
 
     public class Input
@@ -26,7 +29,7 @@ namespace RPG_GAME.App
         public InputCommand ReadCommand()
         {
             var key = Console.ReadKey(true);
-            System.Console.Title = $"Last key: {key.Key}";
+            //System.Console.Title = $"Last key: {key.Key}";
             return key.Key switch
             {
 
@@ -39,11 +42,7 @@ namespace RPG_GAME.App
                 ConsoleKey.G => InputCommand.Drop,
                 ConsoleKey.D1 => InputCommand.FirstWeapon,
                 ConsoleKey.D2 => InputCommand.SecondWeapon,
-                //Arrow steering for fun 
-                //ConsoleKey.UpArrow => InputCommand.Up,
-                //ConsoleKey.DownArrow => InputCommand.Down,
-                //ConsoleKey.LeftArrow => InputCommand.Left,
-                //ConsoleKey.RightArrow => InputCommand.Right,
+                ConsoleKey.R => InputCommand.Shoot,
                 _ => InputCommand.None
             };
 

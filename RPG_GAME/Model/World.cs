@@ -1,10 +1,5 @@
 ﻿using System;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RPG_GAME.Model
 {
@@ -20,10 +15,12 @@ namespace RPG_GAME.Model
         {
             _tiles = new Tile[Height, Width];
             InitializeTiles();
-            var Statistics = new Dictionary<string, int>();
-            var Income = new Dictionary<string, int>();
-            var Slots = new List<Items>();
-            Player = new Player(new Vec2(1, 1),Statistics, Income, Slots);
+
+            var statistics = new Dictionary<string, int>();
+            var income = new Dictionary<string, int>();
+            var slots = new List<Items>();
+
+            Player = new Player(new Vec2(1, 1), statistics, income, slots);
         }
 
         private void InitializeTiles()
@@ -32,16 +29,17 @@ namespace RPG_GAME.Model
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    bool isBorder = x == 0 ||y == 0 || y == Height - 1 || x == Width - 1;
+                    bool isBorder = x == 0 || y == 0 || y == Height - 1 || x == Width - 1;
                     _tiles[y, x] = new Tile(isBorder);
-
                 }
             }
-            
-            // przykładowa ściana w środku
-            for (int x = 10; x < 30; x++)
+
+            // Random obstacles
+            for (int i = 0; i < 40; i++)
             {
-                _tiles[8, x] = new Tile(true);
+                int randomY = Random.Shared.Next(2, Height - 2);
+                int randomX = Random.Shared.Next(2, Width - 2);
+                _tiles[randomY, randomX] = new Tile(true);
             }
         }
 

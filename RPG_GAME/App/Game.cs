@@ -24,6 +24,8 @@ namespace RPG_GAME.App
 
         public void Run()
         {
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.ForegroundColor = ConsoleColor.White;
             _isRunning = true;
 
             while (_isRunning)
@@ -54,7 +56,18 @@ namespace RPG_GAME.App
                 case InputCommand.Quit:
                     _isRunning = false;
                     break;
-                
+                case InputCommand.Pickup:
+                    
+                    break;
+                case InputCommand.Drop:
+
+                    break;
+                case InputCommand.FirstWeapon:
+
+                    break;
+                case InputCommand.SecondWeapon: 
+
+                    break;  
             }
         }
     }

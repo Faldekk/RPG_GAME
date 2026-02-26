@@ -10,15 +10,12 @@ namespace RPG_GAME.Model
     public class Tile
     {
         public bool IsWall { get; }
-        private bool IsWeapon { get; }
+        public bool IsWeapon { get; } = false;
 
         public Tile(bool isWall)
         {
             IsWall = isWall;
         }
-        public bool Weapon(bool IsWeapon)
-        {
-            return IsWeapon;
-        }
+        //public bool Weapon(bool IsWeapon ){ return IsWeapon; }
     }
 }

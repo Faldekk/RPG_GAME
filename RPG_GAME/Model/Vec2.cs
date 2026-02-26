@@ -16,7 +16,6 @@ namespace RPG_GAME.Model
             X = x;
             Y = y;
         }
-
         public Vec2 Add(int dx, int dy)
         {
             return new Vec2(X + dx, Y + dy);

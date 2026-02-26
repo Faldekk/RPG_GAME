@@ -27,7 +27,9 @@ namespace RPG_GAME.UI
         }
 
         public void PutChar(int row, int col, char ch)
+
         {
+            Console.OutputEncoding = Encoding.Unicode;
             if (row < 0 || row >= _rows || col < 0 || col >= _cols)
                 return;
 
