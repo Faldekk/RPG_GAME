@@ -11,7 +11,11 @@ namespace RPG_GAME.UI
         public Renderer()
         {
             _config = new RenderConfig();
-            _buffer = new ConsoleBuffer(World.Height + 2, World.Width + _config.PanelWidth);
+
+            int bufferHeight = 30;
+            int bufferWidth = World.Width + _config.PanelWidth;
+
+            _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
 
         public void Render(World world)
@@ -19,6 +23,7 @@ namespace RPG_GAME.UI
             _buffer.Clear();
 
             RenderMap(world);
+            RenderItems(world);
             RenderPlayer(world.Player);
             RenderUI(world.Player);
 
@@ -33,6 +38,21 @@ namespace RPG_GAME.UI
                 {
                     char tileChar = GetTileCharacter(world.GetTile(y, x));
                     _buffer.PutChar(y, x, tileChar);
+                }
+            }
+        }
+
+        private void RenderItems(World world)
+        {
+            for (int y = 0; y < World.Height; y++)
+            {
+                for (int x = 0; x < World.Width; x++)
+                {
+                    var tile = world.GetTile(y, x);
+                    if (tile.HasItem)
+                    {
+                        _buffer.PutChar(y, x, _config.ItemCharacter);
+                    }
                 }
             }
         }
@@ -62,92 +82,91 @@ namespace RPG_GAME.UI
 
         private int RenderHeader(int panelX, int startRow)
         {
-            _buffer.PutString(startRow++, panelX, "Get off the Island Game :)");
-            _buffer.PutString(startRow++, panelX, "created by Epstein's survivor");
+            _buffer.PutString(startRow++, panelX, "Get off the Island :)");
+            _buffer.PutString(startRow++, panelX, "by Epstein's survivor");
             return startRow + 1;
         }
 
         private int RenderControls(int panelX, int startRow)
         {
+            _buffer.PutString(startRow++, panelX, "=== CONTROLS ===");
             _buffer.PutString(startRow++, panelX, "WASD - move");
-            startRow++;
-            _buffer.PutString(startRow++, panelX, "E - pick up the item");
-            _buffer.PutString(startRow++, panelX, "G - drop the item");
+            _buffer.PutString(startRow++, panelX, "E - pick up");
+            _buffer.PutString(startRow++, panelX, "G - drop");
+            _buffer.PutString(startRow++, panelX, "X - swap hands");
+            _buffer.PutString(startRow++, panelX, "1 - drop left");
+            _buffer.PutString(startRow++, panelX, "2 - drop right");
             return startRow + 1;
         }
 
         private int RenderCurrency(Player player, int panelX, int startRow)
         {
-            _buffer.PutString(startRow++, panelX, "Money:");
-            _buffer.PutString(startRow++, panelX, $"  Coins: {player.Stats.Coins}");
-            _buffer.PutString(startRow++, panelX, $"  Gold: {player.Stats.Gold}");
+            _buffer.PutString(startRow++, panelX, "=== MONEY ===");
+            _buffer.PutString(startRow++, panelX, $"Coins: {player.Stats.Coins}");
+            _buffer.PutString(startRow++, panelX, $"Gold: {player.Stats.Gold}");
             return startRow + 1;
         }
 
         private int RenderStats(Player player, int panelX, int startRow)
         {
-            _buffer.PutString(startRow++, panelX, "Stats:");
-            _buffer.PutString(startRow++, panelX, $"  HP: {player.Stats.Health}/{player.Stats.MaxHealth}");
-            _buffer.PutString(startRow++, panelX, $"  STR: {player.Stats.Strength}");
-            _buffer.PutString(startRow++, panelX, $"  DEX: {player.Stats.Dexterity}");
-            _buffer.PutString(startRow++, panelX, $"  LCK: {player.Stats.Luck}");
+            _buffer.PutString(startRow++, panelX, "=== STATS ===");
+            _buffer.PutString(startRow++, panelX, $"HP: {player.Stats.Health}/{player.Stats.MaxHealth}");
+            _buffer.PutString(startRow++, panelX, $"STR: {player.Stats.Strength}");
+            _buffer.PutString(startRow++, panelX, $"DEX: {player.Stats.Dexterity}");
+            _buffer.PutString(startRow++, panelX, $"LCK: {player.Stats.Luck}");
             return startRow + 1;
         }
 
         private int RenderEquipment(Player player, int panelX, int startRow)
         {
+            _buffer.PutString(startRow++, panelX, "=== EQUIPMENT ===");
+
             var leftHand = player.Inventory.LeftHand;
             var rightHand = player.Inventory.RightHand;
 
-            // No weapons equipped
             if (leftHand == null && rightHand == null)
             {
-                _buffer.PutString(startRow++, panelX, "No weapons yet. Grind more");
-                return startRow;
+                _buffer.PutString(startRow++, panelX, "No weapons yet");
+                return startRow + 1;
             }
 
-            // Two-handed weapon
             if (player.Inventory.HasTwoHandedWeapon)
             {
                 var weapon = leftHand ?? rightHand;
                 if (weapon != null)
                 {
                     _buffer.PutString(startRow++, panelX, $"2H: {weapon.Name}");
-                    _buffer.PutString(startRow++, panelX, $"  DMG: {weapon.Damage_Heal} | DUR: {weapon.Lifespan}%");
+                    _buffer.PutString(startRow++, panelX, $"DMG: {weapon.Damage_Heal}");
                 }
             }
             else
             {
-                // Left hand
                 string leftText = leftHand != null
-                    ? $"L: {leftHand.Name} (DMG: {leftHand.Damage_Heal})"
+                    ? $"L: {leftHand.Name} ({leftHand.Damage_Heal})"
                     : "L: (empty)";
                 _buffer.PutString(startRow++, panelX, leftText);
 
-                // Right hand
                 string rightText = rightHand != null
-                    ? $"R: {rightHand.Name} (DMG: {rightHand.Damage_Heal})"
+                    ? $"R: {rightHand.Name} ({rightHand.Damage_Heal})"
                     : "R: (empty)";
                 _buffer.PutString(startRow++, panelX, rightText);
             }
 
-            return startRow;
+            return startRow + 1;
         }
 
         private void RenderQuitOption(int panelX, int startRow)
         {
-            _buffer.PutString(startRow, panelX, "Q - quit");
+            _buffer.PutString(startRow, panelX, "Q - quit game");
         }
     }
 
-    /// <summary>
-    /// Configuration for rendering settings
-    /// </summary>
     public class RenderConfig
     {
-        public int PanelWidth { get; set; } = 30;
+        public int PanelWidth { get; set; } = 40;
         public char WallCharacter { get; set; } = '█';
         public char FloorCharacter { get; set; } = ' ';
         public char PlayerCharacter { get; set; } = 'ᒊ';
+        public char ItemCharacter { get; set; } = '⚔';
     }
 }

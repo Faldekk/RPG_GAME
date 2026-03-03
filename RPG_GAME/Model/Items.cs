@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 
 namespace RPG_GAME.Model
 {
@@ -12,17 +12,11 @@ namespace RPG_GAME.Model
         public int Count;
         public int Lifespan;
 
-        // Convenient properties
-        public int Value => Damage_Heal;
-        public bool IsTwoHanded => Both_hands;
-        public int Durability => Lifespan;
-        public bool CanPickUp => Lifespan > 0;
-
         public Items(string name, string type, int damage, bool both_hands, Tuple<int, int>? position = null)
         {
             Name = name;
             Type = type;
-            Damage_Heal = damage; // FIXED: by³o Damage_Heal = Damage_Heal
+            Damage_Heal = damage;
             Both_hands = both_hands;
             Position = position;
             Count = 0;

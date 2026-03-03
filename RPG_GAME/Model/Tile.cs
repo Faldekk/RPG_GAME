@@ -1,21 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RPG_GAME.Model
 {
     public class Tile
     {
         public bool IsWall { get; }
-        public bool IsWeapon { get; } = false;
+        public Items? Item { get; set; }
 
         public Tile(bool isWall)
         {
             IsWall = isWall;
+            Item = null;
         }
-        //public bool Weapon(bool IsWeapon ){ return IsWeapon; }
+
+        public bool HasItem => Item != null;
     }
 }

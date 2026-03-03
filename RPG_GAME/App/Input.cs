@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System;
 using RPG_GAME.Model;
-using RPG_GAME.UI;
 
 namespace RPG_GAME.App
 {
@@ -16,36 +10,37 @@ namespace RPG_GAME.App
         Down,
         Left,
         Right,
-        Quit,
         Pickup,
         Drop,
-        FirstWeapon,
-        SecondWeapon,
-        Shoot
+        SwapWeapons,      
+        DropLeftHand,     
+        DropRightHand,    
+        Quit
     }
 
     public class Input
     {
         public InputCommand ReadCommand()
         {
-            var key = Console.ReadKey(true);
-            //System.Console.Title = $"Last key: {key.Key}";
-            return key.Key switch
-            {
+            if (!Console.KeyAvailable)
+                return InputCommand.None;
 
-                ConsoleKey.W => InputCommand.Up,
-                ConsoleKey.S => InputCommand.Down,
-                ConsoleKey.A => InputCommand.Left,
-                ConsoleKey.D => InputCommand.Right,
-                ConsoleKey.Q => InputCommand.Quit,
+            var key = Console.ReadKey(true).Key;
+
+            return key switch
+            {
+                ConsoleKey.W or ConsoleKey.UpArrow => InputCommand.Up,
+                ConsoleKey.S or ConsoleKey.DownArrow => InputCommand.Down,
+                ConsoleKey.A or ConsoleKey.LeftArrow => InputCommand.Left,
+                ConsoleKey.D or ConsoleKey.RightArrow => InputCommand.Right,
                 ConsoleKey.E => InputCommand.Pickup,
                 ConsoleKey.G => InputCommand.Drop,
-                ConsoleKey.D1 => InputCommand.FirstWeapon,
-                ConsoleKey.D2 => InputCommand.SecondWeapon,
-                ConsoleKey.R => InputCommand.Shoot,
+                ConsoleKey.X => InputCommand.SwapWeapons,      
+                ConsoleKey.D1 or ConsoleKey.NumPad1 => InputCommand.DropLeftHand,  // 1 - upuść lewą
+                ConsoleKey.D2 or ConsoleKey.NumPad2 => InputCommand.DropRightHand, // 2 - upuść prawą
+                ConsoleKey.Q or ConsoleKey.Escape => InputCommand.Quit,
                 _ => InputCommand.None
             };
-
         }
     }
 }
