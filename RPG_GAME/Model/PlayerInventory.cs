@@ -12,7 +12,7 @@ namespace RPG_GAME.Model
         public Items? RightHand => _rightHand;
 
         public bool HasTwoHandedWeapon =>
-            (_leftHand?.Both_hands ?? false) || (_rightHand?.Both_hands ?? false);
+            (_leftHand?.IsTwoHanded ?? false) || (_rightHand?.IsTwoHanded ?? false);
 
         public PlayerInventory() { }
 
@@ -21,7 +21,7 @@ namespace RPG_GAME.Model
             if (handIndex < 0 || handIndex > 1)
                 return false;
 
-            if (item.Both_hands)
+            if (item.IsTwoHanded)
             {
                 _leftHand = item;
                 _rightHand = null;
@@ -46,7 +46,7 @@ namespace RPG_GAME.Model
 
             Items? unequipped = handIndex == 0 ? _leftHand : _rightHand;
 
-            if (unequipped?.Both_hands ?? false)
+            if (unequipped?.IsTwoHanded ?? false)
             {
                 _leftHand = null;
                 _rightHand = null;
@@ -65,7 +65,7 @@ namespace RPG_GAME.Model
         public IEnumerable<Items> GetAllWeapons()
         {
             if (_leftHand != null) yield return _leftHand;
-            if (_rightHand != null && !(_leftHand?.Both_hands ?? false))
+            if (_rightHand != null && !(_leftHand?.IsTwoHanded ?? false))
                 yield return _rightHand;
         }
 

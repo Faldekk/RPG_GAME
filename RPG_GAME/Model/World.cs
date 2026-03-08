@@ -5,8 +5,8 @@ namespace RPG_GAME.Model
 {
     public class World
     {
-        public const int Height = 20;
-        public const int Width = 40;
+        public const int Height = 21;
+        public const int Width = 42;
 
         private readonly Tile[,] _tiles;
         public Player Player { get; }
@@ -92,10 +92,10 @@ namespace RPG_GAME.Model
             if (item == null)
                 return false;
 
-            if ((item.Both_hands && Player.Inventory.LeftHand != null) && (Player.Inventory.RightHand != null))
+            if (item.IsTwoHanded && Player.Inventory.LeftHand != null && Player.Inventory.RightHand != null)
                 return false;
 
-            int hand = item.Both_hands
+            int hand = item.IsTwoHanded
                 ? (Player.Inventory.LeftHand  != null ? 0 : Player.Inventory.RightHand != null ? 1 : 0)
                 : (Player.Inventory.LeftHand  == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0);
 

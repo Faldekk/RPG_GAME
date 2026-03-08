@@ -138,18 +138,18 @@ namespace RPG_GAME.UI
                 if (weapon != null)
                 {
                     _buffer.PutString(startRow++, panelX, $"2H: {weapon.Name}");
-                    _buffer.PutString(startRow++, panelX, $"DMG: {weapon.Damage_Heal}");
+                    _buffer.PutString(startRow++, panelX, $"DMG: {weapon.Value}");
                 }
             }
             else
             {
                 string leftText = leftHand != null
-                    ? $"L: {leftHand.Name} ({leftHand.Damage_Heal})"
+                    ? $"L: {leftHand.Name} ({leftHand.Value})"
                     : "L: (empty)";
                 _buffer.PutString(startRow++, panelX, leftText);
 
                 string rightText = rightHand != null
-                    ? $"R: {rightHand.Name} ({rightHand.Damage_Heal})"
+                    ? $"R: {rightHand.Name} ({rightHand.Value})"
                     : "R: (empty)";
                 _buffer.PutString(startRow++, panelX, rightText);
             }

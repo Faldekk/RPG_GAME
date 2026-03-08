@@ -41,7 +41,7 @@
 
             foreach (var weapon in Inventory.GetAllWeapons())
             {
-                totalDamage += weapon.Damage_Heal;
+                totalDamage += weapon.Value;
             }
 
             return totalDamage;

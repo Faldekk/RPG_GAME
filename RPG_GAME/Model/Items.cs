@@ -2,38 +2,38 @@
 
 namespace RPG_GAME.Model
 {
-    public class Items
+    public class Items : IEquippable
     {
         public string Name { get; set; }
         public string Type { get; set; }
-        public int Damage_Heal { get; set; }
-        public bool Both_hands { get; set; }
+        public int Value { get; set; }
+        public bool IsTwoHanded { get; set; }
         public Tuple<int, int>? Position;
         public int Count;
-        public int Lifespan;
+        public int Durability { get; set; }
 
-        public Items(string name, string type, int damage, bool both_hands, Tuple<int, int>? position = null)
+        public Items(string name, string type, int value, bool isTwoHanded, Tuple<int, int>? position = null)
         {
             Name = name;
             Type = type;
-            Damage_Heal = damage;
-            Both_hands = both_hands;
+            Value = value;
+            IsTwoHanded = isTwoHanded;
             Position = position;
             Count = 0;
-            Lifespan = 100;
+            Durability = 100;
         }
 
         public void Use()
         {
-            if (Lifespan > 0)
+            if (Durability > 0)
             {
-                Lifespan--;
+                Durability--;
             }
         }
 
         public override string ToString()
         {
-            return $"{Name} ({Type}) - DMG/HEAL: {Damage_Heal}, Durability: {Lifespan}%";
+            return $"{Name} ({Type}) - DMG/HEAL: {Value}, Durability: {Durability}%";
         }
     }
 }
