@@ -3,6 +3,7 @@ using RPG_GAME.Model;
 
 namespace RPG_GAME.App
 {
+    // I had no other idea how to do it ong
     public enum InputCommand
     {
         None,
