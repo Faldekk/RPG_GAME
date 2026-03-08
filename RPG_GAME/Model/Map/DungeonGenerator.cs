@@ -9,9 +9,9 @@ namespace RPG_GAME.Model.Map
         {
             var rooms = new List<RectRoom>();
 
-            int roomCount = 8;
-            int minSize = 4;
-            int maxSize = 8;
+            int roomCount = 20;
+            int minSize = 8;
+            int maxSize = 10;
 
             for (int i = 0; i < roomCount; i++)
             {

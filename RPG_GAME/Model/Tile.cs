@@ -1,13 +1,18 @@
-﻿using RPG_GAME.Model;
+﻿using System;
 
-public class Tile
+namespace RPG_GAME.Model
 {
-    public bool IsWall { get; set; }
-    public Items? Item { get; set; }
-
-    public bool HasItem => Item != null;
-    public Tile(bool iswall)
+    public class Tile
     {
-        IsWall = iswall;            
+        public bool IsWall { get; set; }
+        public Items? Item { get; set; }
+
+        public Tile(bool isWall)
+        {
+            IsWall = isWall;
+            Item = null;
+        }
+
+        public bool HasItem => Item != null;
     }
 }

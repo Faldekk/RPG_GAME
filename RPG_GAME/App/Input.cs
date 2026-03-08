@@ -37,8 +37,8 @@ namespace RPG_GAME.App
                 ConsoleKey.E => InputCommand.Pickup,
                 ConsoleKey.G => InputCommand.Drop,
                 ConsoleKey.X => InputCommand.SwapWeapons,      
-                ConsoleKey.D1 or ConsoleKey.NumPad1 => InputCommand.DropLeftHand,  // 1 - upuść lewą
-                ConsoleKey.D2 or ConsoleKey.NumPad2 => InputCommand.DropRightHand, // 2 - upuść prawą
+                ConsoleKey.D1 or ConsoleKey.NumPad1 => InputCommand.DropLeftHand,  
+                ConsoleKey.D2 or ConsoleKey.NumPad2 => InputCommand.DropRightHand, 
                 ConsoleKey.Q or ConsoleKey.Escape => InputCommand.Quit,
                 _ => InputCommand.None
             };

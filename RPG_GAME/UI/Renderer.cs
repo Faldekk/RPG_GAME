@@ -82,8 +82,8 @@ namespace RPG_GAME.UI
 
         private int RenderHeader(int panelX, int startRow)
         {
-            _buffer.PutString(startRow++, panelX, "Get off the Island :)");
-            _buffer.PutString(startRow++, panelX, "by Epstein's survivor");
+            _buffer.PutString(startRow++, panelX, "RPG Game or sum");
+            _buffer.PutString(startRow++, panelX, "by Faldekk");
             return startRow + 1;
         }
 
@@ -111,9 +111,11 @@ namespace RPG_GAME.UI
         {
             _buffer.PutString(startRow++, panelX, "=== STATS ===");
             _buffer.PutString(startRow++, panelX, $"HP: {player.Stats.Health}/{player.Stats.MaxHealth}");
-            _buffer.PutString(startRow++, panelX, $"STR: {player.Stats.Strength}");
-            _buffer.PutString(startRow++, panelX, $"DEX: {player.Stats.Dexterity}");
-            _buffer.PutString(startRow++, panelX, $"LCK: {player.Stats.Luck}");
+            _buffer.PutString(startRow++, panelX, $"STRENGTH: {player.Stats.Strength}");
+            _buffer.PutString(startRow++, panelX, $"DEXTERITY: {player.Stats.Dexterity}");
+            _buffer.PutString(startRow++, panelX, $"LUCK: {player.Stats.Luck}");
+            _buffer.PutString(startRow++, panelX, $"AGGRESSION: {player.Stats.Aggression}");
+            _buffer.PutString(startRow++, panelX, $"WISDOM: {player.Stats.Wisdom}");
             return startRow + 1;
         }
 
@@ -164,9 +166,9 @@ namespace RPG_GAME.UI
     public class RenderConfig
     {
         public int PanelWidth { get; set; } = 40;
-        public char WallCharacter { get; set; } = '█';
+        public char WallCharacter { get; set; } = '0';
         public char FloorCharacter { get; set; } = ' ';
         public char PlayerCharacter { get; set; } = 'ᒊ';
-        public char ItemCharacter { get; set; } = '⚔';
+        public char ItemCharacter { get; set; } = 'x';
     }
 }

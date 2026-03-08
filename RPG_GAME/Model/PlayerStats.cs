@@ -3,15 +3,11 @@ using System.Collections.Generic;
 
 namespace RPG_GAME.Model
 {
-    /// <summary>
-    /// Manages player statistics and currency
-    /// </summary>
+    
     public class PlayerStats
     {
         private readonly Dictionary<string, int> _stats;
         private readonly Dictionary<string, int> _currency;
-
-        // Direct property accessors for common stats
         public int Strength
         {
             get => GetStat("Strength");
@@ -50,7 +46,6 @@ namespace RPG_GAME.Model
             set => SetStat("Wisdom", value);
         }
 
-        // Currency properties
         public int Coins
         {
             get => GetCurrency("Coins");

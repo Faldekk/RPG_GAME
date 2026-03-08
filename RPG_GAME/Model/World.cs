@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using RPG_GAME.Model.Map;
+
 namespace RPG_GAME.Model
 {
     public class World
@@ -14,13 +15,14 @@ namespace RPG_GAME.Model
         public World()
         {
             _tiles = new Tile[Height, Width];
-            InitializeTiles();
 
             var statistics = new Dictionary<string, int>();
             var income = new Dictionary<string, int>();
-            var slots = new List<Items>();
+            var slots = new List<Items?>();
 
             Player = new Player(new Vec2(1, 1), statistics, income, slots);
+
+            InitializeTiles();
         }
 
         private void InitializeTiles()
@@ -40,21 +42,26 @@ namespace RPG_GAME.Model
                 var start = rooms[0];
                 Player.MoveTo(new Vec2(start.CenterX, start.CenterY));
             }
+            else
+            {
+                _tiles[1, 1].IsWall = false;
+                Player.MoveTo(new Vec2(1, 1));
+            }
 
             SpawnRandomWeapons(10);
         }
+
         private void SpawnRandomWeapons(int count)
         {
             int spawned = 0;
             int attempts = 0;
-            int maxAttempts = count * 10;
+            int maxAttempts = count * 20;
 
             while (spawned < count && attempts < maxAttempts)
             {
-                int randomY = Random.Shared.Next(2, Height - 2);
-                int randomX = Random.Shared.Next(2, Width - 2);
+                int randomY = Random.Shared.Next(1, Height - 1);
+                int randomX = Random.Shared.Next(1, Width - 1);
 
-                // Only spawn on empty, walkable tiles
                 if (!_tiles[randomY, randomX].IsWall && !_tiles[randomY, randomX].HasItem)
                 {
                     _tiles[randomY, randomX].Item = WeaponGenerator.GenerateRandomWeapon(randomX, randomY);
@@ -74,8 +81,7 @@ namespace RPG_GAME.Model
         {
             Vec2 next = Player.Pos.Add(dx, dy);
 
-            if (next.X < 0 || next.X >= Width ||
-                next.Y < 0 || next.Y >= Height)
+            if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
                 return false;
 
             if (_tiles[next.Y, next.X].IsWall)
@@ -85,43 +91,40 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        /// <summary>
-        /// Pick up item at player position
-        /// </summary>
         public bool TryPickUpItem()
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
-
-            if (!tile.HasItem)
-                return false;
-
             var item = tile.Item;
 
-            // Try to equip in left hand first
-            if (Player.EquipWeapon(item, 0))
+            if (item == null)
+                return false;
+
+            if ((item.Both_hands && Player.Inventory.LeftHand != null) && (Player.Inventory.RightHand != null))
+                return false;
+
+            int hand = item.Both_hands
+                ? (Player.Inventory.LeftHand  != null ? 0 : Player.Inventory.RightHand != null ? 1 : 0)
+                : (Player.Inventory.LeftHand  == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0);
+
+            var displaced = Player.UnequipWeapon(hand);
+
+            if (!Player.EquipWeapon(item, hand))
             {
-                tile.Item = null;
-                return true;
+                if (displaced != null) Player.EquipWeapon(displaced, hand);
+                return false;
             }
 
-            // Try right hand
-            if (Player.EquipWeapon(item, 1))
-            {
-                tile.Item = null;
-                return true;
-            }
+            tile.Item = displaced;
+            if (displaced != null)
+                displaced.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
 
-            return false; // Hands full
+            return true;
         }
 
-        /// <summary>
-        /// Drop item from player inventory
-        /// </summary>
         public bool TryDropItem(int handIndex)
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
 
-            // Can't drop if there's already an item here
             if (tile.HasItem)
                 return false;
 
@@ -136,19 +139,12 @@ namespace RPG_GAME.Model
 
             return false;
         }
-        // Dodaj te metody do klasy World:
 
-        /// <summary>
-        /// Zamienia broń między rękami gracza
-        /// </summary>
         public void SwapPlayerWeapons()
         {
             Player.SwapWeapons();
         }
 
-        /// <summary>
-        /// Upuszcza broń z konkretnej ręki (0 = lewa, 1 = prawa)
-        /// </summary>
         public bool TryDropSpecificHand(int handIndex)
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
@@ -168,5 +164,4 @@ namespace RPG_GAME.Model
             return false;
         }
     }
-
 }
