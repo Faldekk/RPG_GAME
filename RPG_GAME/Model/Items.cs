@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace RPG_GAME.Model
-{ //do poprawy ta logika z healem
+{
     public class Items
     {
         public string Name { get; set; }

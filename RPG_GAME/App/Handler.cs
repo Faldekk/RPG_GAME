@@ -24,7 +24,6 @@ namespace RPG_GAME.App
 
         protected abstract bool Process(InputCommand cmd, World world, Game game);
     }
-
     public class MoveUpHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -35,7 +34,6 @@ namespace RPG_GAME.App
             return true;
         }
     }
-
     public class MoveDownHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -46,7 +44,6 @@ namespace RPG_GAME.App
             return true;
         }
     }
-
     public class MoveLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -57,7 +54,6 @@ namespace RPG_GAME.App
             return true;
         }
     }
-
     public class MoveRightHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -68,7 +64,6 @@ namespace RPG_GAME.App
             return true;
         }
     }
-
     public class PickupHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -79,7 +74,6 @@ namespace RPG_GAME.App
             return true;
         }
     }
-
     public class DropHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -92,25 +86,23 @@ namespace RPG_GAME.App
             return true;
         }
     }
-
     public class SwapWeaponsHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.SwapWeapons) return false;
 
-            world.SwapPlayerWeapons();
+            world.Player.SwapWeapons();
             return true;
         }
     }
-
     public class DropLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.DropLeftHand) return false;
 
-            world.TryDropSpecificHand(0);
+            world.TryDropItem(0);
             return true;
         }
     }
@@ -121,17 +113,15 @@ namespace RPG_GAME.App
         {
             if (cmd != InputCommand.DropRightHand) return false;
 
-            world.TryDropSpecificHand(1);
+            world.TryDropItem(1);
             return true;
         }
     }
-
     public class QuitHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Quit) return false;
-
             game.Stop();
             return true;
         }

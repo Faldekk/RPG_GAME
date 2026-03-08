@@ -166,9 +166,9 @@ namespace RPG_GAME.UI
     public class RenderConfig
     {
         public int PanelWidth { get; set; } = 40;
-        public char WallCharacter { get; set; } = '0';
+        public char WallCharacter { get; set; } = '█';
         public char FloorCharacter { get; set; } = ' ';
-        public char PlayerCharacter { get; set; } = 'ᒊ';
+        public char PlayerCharacter { get; set; } = '¶';
         public char ItemCharacter { get; set; } = 'x';
     }
 }

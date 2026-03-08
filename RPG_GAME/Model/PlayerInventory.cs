@@ -3,9 +3,6 @@ using System.Collections.Generic;
 
 namespace RPG_GAME.Model
 {
-    /// <summary>
-    /// Manages player's equipped weapons (left and right hand only)
-    /// </summary>
     public class PlayerInventory
     {
         private Items? _leftHand;
@@ -17,24 +14,13 @@ namespace RPG_GAME.Model
         public bool HasTwoHandedWeapon =>
             (_leftHand?.Both_hands ?? false) || (_rightHand?.Both_hands ?? false);
 
-        public IReadOnlyList<Items?> EquippedItems =>
-            new List<Items?> { _leftHand, _rightHand };
+        public PlayerInventory() { }
 
-        public PlayerInventory()
-        {
-            _leftHand = null;
-            _rightHand = null;
-        }
-
-        /// <summary>
-        /// Equips item to specified hand (0 = left, 1 = right)
-        /// </summary>
         public bool EquipItem(Items item, int handIndex)
         {
             if (handIndex < 0 || handIndex > 1)
                 return false;
 
-            // If item is two-handed, clear both hands and equip in left
             if (item.Both_hands)
             {
                 _leftHand = item;
@@ -42,7 +28,6 @@ namespace RPG_GAME.Model
                 return true;
             }
 
-            // Can't equip if there's already a two-handed weapon
             if (HasTwoHandedWeapon)
                 return false;
 
@@ -54,9 +39,6 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        /// <summary>
-        /// Unequips weapon from specified hand
-        /// </summary>
         public Items? UnequipItem(int handIndex)
         {
             if (handIndex < 0 || handIndex > 1)
@@ -64,7 +46,6 @@ namespace RPG_GAME.Model
 
             Items? unequipped = handIndex == 0 ? _leftHand : _rightHand;
 
-            // If it was two-handed, clear both hands
             if (unequipped?.Both_hands ?? false)
             {
                 _leftHand = null;
@@ -81,9 +62,6 @@ namespace RPG_GAME.Model
             return unequipped;
         }
 
-        /// <summary>
-        /// Gets both equipped weapons
-        /// </summary>
         public IEnumerable<Items> GetAllWeapons()
         {
             if (_leftHand != null) yield return _leftHand;
@@ -91,9 +69,6 @@ namespace RPG_GAME.Model
                 yield return _rightHand;
         }
 
-        /// <summary>
-        /// Clears all equipped items
-        /// </summary>
         public void ClearAll()
         {
             _leftHand = null;

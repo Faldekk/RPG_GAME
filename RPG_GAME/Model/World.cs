@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using RPG_GAME.Model.Map;
 
 namespace RPG_GAME.Model
@@ -15,13 +14,7 @@ namespace RPG_GAME.Model
         public World()
         {
             _tiles = new Tile[Height, Width];
-
-            var statistics = new Dictionary<string, int>();
-            var income = new Dictionary<string, int>();
-            var slots = new List<Items?>();
-
-            Player = new Player(new Vec2(1, 1), statistics, income, slots);
-
+            Player = new Player(new Vec2(1, 1));
             InitializeTiles();
         }
 
@@ -106,11 +99,11 @@ namespace RPG_GAME.Model
                 ? (Player.Inventory.LeftHand  != null ? 0 : Player.Inventory.RightHand != null ? 1 : 0)
                 : (Player.Inventory.LeftHand  == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0);
 
-            var displaced = Player.UnequipWeapon(hand);
+            var displaced = Player.Inventory.UnequipItem(hand);
 
-            if (!Player.EquipWeapon(item, hand))
+            if (!Player.Inventory.EquipItem(item, hand))
             {
-                if (displaced != null) Player.EquipWeapon(displaced, hand);
+                if (displaced != null) Player.Inventory.EquipItem(displaced, hand);
                 return false;
             }
 
@@ -128,7 +121,7 @@ namespace RPG_GAME.Model
             if (tile.HasItem)
                 return false;
 
-            var item = Player.UnequipWeapon(handIndex);
+            var item = Player.Inventory.UnequipItem(handIndex);
 
             if (item != null)
             {
@@ -140,28 +133,5 @@ namespace RPG_GAME.Model
             return false;
         }
 
-        public void SwapPlayerWeapons()
-        {
-            Player.SwapWeapons();
-        }
-
-        public bool TryDropSpecificHand(int handIndex)
-        {
-            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
-
-            if (tile.HasItem)
-                return false;
-
-            var item = Player.UnequipWeapon(handIndex);
-
-            if (item != null)
-            {
-                item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
-                tile.Item = item;
-                return true;
             }
-
-            return false;
         }
-    }
-}

@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace RPG_GAME.Model
+﻿namespace RPG_GAME.Model
 {
-    
-    //Character is crazy  a lot things
     public class Player
     {
         public PlayerStats Stats { get; private set; }
@@ -13,63 +8,15 @@ namespace RPG_GAME.Model
 
         public bool IsAlive => Stats.IsAlive;
 
-        public Player(Vec2 startPos, Dictionary<string, int> stats, Dictionary<string, int> income, List<Items> slots)
-        {
-            Pos = startPos;
-            Stats = new PlayerStats();
-            Inventory = new PlayerInventory();
-            if (slots != null && slots.Count > 0)
-            {
-                if (slots.Count > 0 && slots[0] != null)
-                    Inventory.EquipItem(slots[0], 0);
-                if (slots.Count > 1 && slots[1] != null)
-                    Inventory.EquipItem(slots[1], 1);
-            }
-        }
-
         public Player(Vec2 startPosition)
         {
             Pos = startPosition;
             Stats = new PlayerStats();
             Inventory = new PlayerInventory();
         }
-        // Wojna z klonem ??? :)
-        public Player(Player player)
-        {
-            this.Pos = player.Pos;
-            this.Stats = new PlayerStats();
-            this.Inventory = new PlayerInventory();
-            if (player.Stats != null)
-            {
-                foreach (var stat in player.Stats.AllStats)
-                {
-                    Stats.ModifyStat(stat.Key, stat.Value - Stats.AllStats[stat.Key]);
-                }
-                foreach (var currency in player.Stats.AllCurrency)
-                {
-                    Stats.ModifyCurrency(currency.Key, currency.Value - Stats.AllCurrency[currency.Key]);
-                }
-            }
-            if (player.Inventory != null)
-            {
-                if (player.Inventory.LeftHand != null)
-                    Inventory.EquipItem(player.Inventory.LeftHand, 0);
-                if (player.Inventory.RightHand != null)
-                    Inventory.EquipItem(player.Inventory.RightHand, 1);
-            }
-        }
-        //Self-explanatory ale interakcje w grze 
         public void MoveTo(Vec2 newPos)
         {
             Pos = newPos;
-        }
-        public bool EquipWeapon(Items weapon, int handIndex = 0)
-        {
-            return Inventory.EquipItem(weapon, handIndex);
-        }
-        public Items? UnequipWeapon(int handIndex)
-        {
-            return Inventory.UnequipItem(handIndex);
         }
         public void SwapWeapons()
         {

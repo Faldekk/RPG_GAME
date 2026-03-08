@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RPG_GAME.UI
 {
@@ -17,6 +14,7 @@ namespace RPG_GAME.UI
             _rows = rows;
             _cols = cols;
             _buffer = new char[rows, cols];
+            Console.OutputEncoding = Encoding.Unicode;
         }
 
         public void Clear(char fill = ' ')
@@ -27,9 +25,7 @@ namespace RPG_GAME.UI
         }
 
         public void PutChar(int row, int col, char ch)
-
         {
-            Console.OutputEncoding = Encoding.Unicode;
             if (row < 0 || row >= _rows || col < 0 || col >= _cols)
                 return;
 
