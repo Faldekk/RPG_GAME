@@ -75,9 +75,6 @@ namespace RPG_GAME.App
         {
             if (cmd != InputCommand.Pickup) return false;
 
-            if (!world.TryDropItem(0))
-                world.TryDropItem(1);
-
             world.TryPickUpItem();
             return true;
         }
@@ -144,5 +141,5 @@ namespace RPG_GAME.App
 
 
 
-}
+
 

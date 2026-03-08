@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using RPG_GAME.Model.Map;
 namespace RPG_GAME.Model
 {
     public class World
@@ -25,28 +25,24 @@ namespace RPG_GAME.Model
 
         private void InitializeTiles()
         {
-            // Create all tiles
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
                 {
-                    bool isBorder = x == 0 || y == 0 || y == Height - 1 || x == Width - 1;
-                    _tiles[y, x] = new Tile(isBorder);
+                    _tiles[y, x] = new Tile(true);
                 }
             }
 
-            // Add random obstacles
-            for (int i = 0; i < 40; i++)
+            var rooms = DungeonGenerator.Generate(_tiles, Width, Height);
+
+            if (rooms.Count > 0)
             {
-                int randomY = Random.Shared.Next(2, Height - 2);
-                int randomX = Random.Shared.Next(2, Width - 2);
-                _tiles[randomY, randomX] = new Tile(true);
+                var start = rooms[0];
+                Player.MoveTo(new Vec2(start.CenterX, start.CenterY));
             }
 
-            // Add random weapons
-            SpawnRandomWeapons(10); // 10 weapons on map
+            SpawnRandomWeapons(10);
         }
-
         private void SpawnRandomWeapons(int count)
         {
             int spawned = 0;

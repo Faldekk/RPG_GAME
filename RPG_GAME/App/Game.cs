@@ -18,8 +18,8 @@ namespace RPG_GAME.App
             _renderer = new Renderer();
             _input = new Input();
             BuildCommandChain();
-
         }
+
         private void BuildCommandChain()
         {
             var up = new MoveUpHandler();
@@ -45,6 +45,7 @@ namespace RPG_GAME.App
 
             _commandChain = up;
         }
+
         public void Run()
         {
             Console.BackgroundColor = ConsoleColor.DarkBlue;
@@ -59,58 +60,19 @@ namespace RPG_GAME.App
                 var cmd = _input.ReadCommand();
                 HandleCommand(cmd);
             }
+
             Console.Clear();
             Console.WriteLine("Thanks for playing!");
         }
 
-        //From Input.cs enum to switch for handling commands that are defined in World.cs uwuwuewue
         private void HandleCommand(InputCommand cmd)
         {
-            switch (cmd)
-            {
-                case InputCommand.Up:
-                    _world.TryMovePlayer(0, -1);
-                    break;
+            _commandChain.Handle(cmd, _world, this);
+        }
 
-                case InputCommand.Down:
-                    _world.TryMovePlayer(0, 1);
-                    break;
-
-                case InputCommand.Left:
-                    _world.TryMovePlayer(-1, 0);
-                    break;
-
-                case InputCommand.Right:
-                    _world.TryMovePlayer(1, 0);
-                    break;
-
-                case InputCommand.Pickup:
-                    if (!_world.TryDropItem(0))
-                        _world.TryDropItem(1);
-                    _world.TryPickUpItem();
-                    break;
-
-                case InputCommand.Drop:
-                    if (!_world.TryDropItem(0))
-                        _world.TryDropItem(1);
-                    break;
-
-                case InputCommand.SwapWeapons:
-                    _world.SwapPlayerWeapons();
-                    break;
-
-                case InputCommand.DropLeftHand:
-                    _world.TryDropSpecificHand(0);
-                    break;
-
-                case InputCommand.DropRightHand:
-                    _world.TryDropSpecificHand(1);
-                    break;
-
-                case InputCommand.Quit:
-                    _isRunning = false;
-                    break;
-            }
+        public void Stop()
+        {
+            _isRunning = false;
         }
     }
 }
