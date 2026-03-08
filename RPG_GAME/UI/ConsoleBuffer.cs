@@ -49,11 +49,12 @@ namespace RPG_GAME.UI
                 for (int x = 0; x < _cols; x++)
                     sb.Append(_buffer[y, x]);
 
-                sb.AppendLine();
+                if (y < _rows - 1)
+                    sb.Append('\n');
             }
 
-            System.Console.SetCursorPosition(0, 0);
-            System.Console.Write(sb.ToString());
+            Console.SetCursorPosition(0, 0);
+            Console.Write(sb.ToString());
         }
     }
 }

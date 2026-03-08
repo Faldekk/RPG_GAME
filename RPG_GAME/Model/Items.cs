@@ -8,16 +8,18 @@ namespace RPG_GAME.Model
         public string Type { get; set; }
         public int Value { get; set; }
         public bool IsTwoHanded { get; set; }
+        public bool IsHeal;
         public Tuple<int, int>? Position;
         public int Count;
         public int Durability { get; set; }
 
-        public Items(string name, string type, int value, bool isTwoHanded, Tuple<int, int>? position = null)
+        public Items(string name, string type, int value, bool isTwoHanded, bool isHeal, Tuple<int, int>? position = null)
         {
             Name = name;
             Type = type;
             Value = value;
             IsTwoHanded = isTwoHanded;
+            IsHeal = isHeal;
             Position = position;
             Count = 0;
             Durability = 100;
@@ -27,7 +29,7 @@ namespace RPG_GAME.Model
         {
             if (Durability > 0)
             {
-                Durability--;
+                Durability -=5;
             }
         }
 

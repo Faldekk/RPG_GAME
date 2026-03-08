@@ -23,7 +23,6 @@ namespace RPG_GAME.UI
             _buffer.Clear();
 
             RenderMap(world);
-            RenderItems(world);
             RenderPlayer(world.Player);
             RenderUI(world.Player);
 
@@ -36,23 +35,9 @@ namespace RPG_GAME.UI
             {
                 for (int x = 0; x < World.Width; x++)
                 {
-                    char tileChar = GetTileCharacter(world.GetTile(y, x));
-                    _buffer.PutChar(y, x, tileChar);
-                }
-            }
-        }
-
-        private void RenderItems(World world)
-        {
-            for (int y = 0; y < World.Height; y++)
-            {
-                for (int x = 0; x < World.Width; x++)
-                {
                     var tile = world.GetTile(y, x);
-                    if (tile.HasItem)
-                    {
-                        _buffer.PutChar(y, x, _config.ItemCharacter);
-                    }
+                    char ch = tile.HasItem ? _config.ItemCharacter : GetTileCharacter(tile);
+                    _buffer.PutChar(y, x, ch);
                 }
             }
         }
@@ -170,5 +155,6 @@ namespace RPG_GAME.UI
         public char FloorCharacter { get; set; } = ' ';
         public char PlayerCharacter { get; set; } = '¶';
         public char ItemCharacter { get; set; } = 'x';
+        public char HealCharacter { get; set; } = '+';
     }
 }
