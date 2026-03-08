@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace RPG_GAME.App
 {
+    //Nwm czy mi sie chce to tlumaczyc ale to to jest dosc proste
     public abstract class CommandHandler
     {
         protected CommandHandler next;

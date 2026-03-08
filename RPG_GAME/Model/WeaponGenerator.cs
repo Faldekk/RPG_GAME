@@ -9,6 +9,7 @@ namespace RPG_GAME.Model
         
         private static readonly List<(string name, string type, int damage, bool twoHanded, bool isHeal)> _weaponTemplates = new()
         {
+            //AI generated nazwy broni poza bloody mary bo mi sie nie chcialo tematycznie nazwy broni wymyslac
             ("Rusty Sword", "Melee", 5, false,false),
             ("Iron Axe", "Melee", 8, false, false),
             ("Wooden Staff", "Magic", 6, true, false),
@@ -19,7 +20,7 @@ namespace RPG_GAME.Model
             ("Bloody Mary", "Magic", 5, false, true),
 
         };
-
+        //bierze bron z templatki
         public static Items GenerateRandomWeapon(Vec2 position)
         {
             var template = _weaponTemplates[_random.Next(_weaponTemplates.Count)];
@@ -33,7 +34,7 @@ namespace RPG_GAME.Model
                 new Tuple<int, int>(position.X, position.Y)
             );
         }
-
+        //wrzuca na ten vector on na tile i do renderka fwaeh 
         public static Items GenerateRandomWeapon(int x, int y)
         {
             return GenerateRandomWeapon(new Vec2(x, y));

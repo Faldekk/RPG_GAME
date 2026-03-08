@@ -9,51 +9,51 @@ namespace RPG_GAME.Model.Map
         {
             var rooms = new List<RectRoom>();
 
-            int roomCount = 20;
-            int minSize = 8;
-            int maxSize = 10;
+            int roomCount = 5;
+            int minSize = 4;
+            int maxSize = 8;
 
-            for (int i = 0; i < roomCount; i++)
+            for (int roomIndex = 0; roomIndex < roomCount; roomIndex++)
             {
-                int w = Random.Shared.Next(minSize, maxSize + 1);
-                int h = Random.Shared.Next(minSize, maxSize + 1);
-                int x = Random.Shared.Next(1, width - w - 1);
-                int y = Random.Shared.Next(1, height - h - 1);
+                int roomWidth = Random.Shared.Next(minSize, maxSize + 1);
+                int roomHeight = Random.Shared.Next(minSize, maxSize + 1);
+                int roomX = Random.Shared.Next(1, width - roomWidth - 1);
+                int roomY = Random.Shared.Next(1, height - roomHeight - 1);
 
-                var newRoom = new RectRoom(x, y, w, h);
+                var candidateRoom = new RectRoom(roomX, roomY, roomWidth, roomHeight);
 
-                bool overlaps = false;
-                foreach (var room in rooms)
+                bool hasOverlap = false;
+                foreach (var existingRoom in rooms)
                 {
-                    if (newRoom.Intersects(room))
+                    if (candidateRoom.Intersects(existingRoom))
                     {
-                        overlaps = true;
+                        hasOverlap = true;
                         break;
                     }
                 }
 
-                if (overlaps)
+                if (hasOverlap)
                     continue;
 
-                MapUtils.CarveRoom(tiles, newRoom);
+                MapUtils.CarveRoom(tiles, candidateRoom);
 
                 if (rooms.Count > 0)
                 {
-                    var prev = rooms[^1];
+                    var previousRoom = rooms[^1];
 
                     if (Random.Shared.Next(2) == 0)
                     {
-                        MapUtils.CarveHorizontalTunnel(tiles, prev.CenterX, newRoom.CenterX, prev.CenterY);
-                        MapUtils.CarveVerticalTunnel(tiles, prev.CenterY, newRoom.CenterY, newRoom.CenterX);
+                        MapUtils.CarveHorizontalTunnel(tiles, previousRoom.CenterX, candidateRoom.CenterX, previousRoom.CenterY);
+                        MapUtils.CarveVerticalTunnel(tiles, previousRoom.CenterY, candidateRoom.CenterY, candidateRoom.CenterX);
                     }
                     else
                     {
-                        MapUtils.CarveVerticalTunnel(tiles, prev.CenterY, newRoom.CenterY, prev.CenterX);
-                        MapUtils.CarveHorizontalTunnel(tiles, prev.CenterX, newRoom.CenterX, newRoom.CenterY);
+                        MapUtils.CarveVerticalTunnel(tiles, previousRoom.CenterY, candidateRoom.CenterY, previousRoom.CenterX);
+                        MapUtils.CarveHorizontalTunnel(tiles, previousRoom.CenterX, candidateRoom.CenterX, candidateRoom.CenterY);
                     }
                 }
 
-                rooms.Add(newRoom);
+                rooms.Add(candidateRoom);
             }
 
             return rooms;

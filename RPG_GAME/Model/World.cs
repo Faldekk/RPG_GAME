@@ -5,8 +5,9 @@ namespace RPG_GAME.Model
 {
     public class World
     {
-        public const int Height = 21;
-        public const int Width = 42;
+        //tak jak w wymaganiach 
+        public const int Height = 20;
+        public const int Width = 40;
 
         private readonly Tile[,] _tiles;
         public Player Player { get; }
@@ -27,7 +28,7 @@ namespace RPG_GAME.Model
                     _tiles[y, x] = new Tile(true);
                 }
             }
-
+            //wiem ze to RectRoom ale fajnie jak moge var uzywac
             var rooms = DungeonGenerator.Generate(_tiles, Width, Height);
 
             if (rooms.Count > 0)
@@ -64,12 +65,12 @@ namespace RPG_GAME.Model
                 attempts++;
             }
         }
-
+        //zobaczmy co tam jest XDDDD
         public Tile GetTile(int y, int x)
         {
             return _tiles[y, x];
         }
-
+        //poruszanie sie 
         public bool TryMovePlayer(int dx, int dy)
         {
             Vec2 next = Player.Pos.Add(dx, dy);
@@ -83,7 +84,7 @@ namespace RPG_GAME.Model
             Player.MoveTo(next);
             return true;
         }
-
+        //musze dodac jedna rzecz bo jest bug ale nie powiem jaki, ale nie wplywa na rozgrywke
         public bool TryPickUpItem()
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
@@ -96,8 +97,8 @@ namespace RPG_GAME.Model
                 return false;
 
             int hand = item.IsTwoHanded
-                ? (Player.Inventory.LeftHand  != null ? 0 : Player.Inventory.RightHand != null ? 1 : 0)
-                : (Player.Inventory.LeftHand  == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0);
+                ? (Player.Inventory.LeftHand != null ? 0 : Player.Inventory.RightHand != null ? 1 : 0)
+                : (Player.Inventory.LeftHand == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0);
 
             var displaced = Player.Inventory.UnequipItem(hand);
 
@@ -113,12 +114,12 @@ namespace RPG_GAME.Model
 
             return true;
         }
-
+        //puszczam item
         public bool TryDropItem(int handIndex)
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
 
-            if (tile.HasItem)
+            if (tile.HasItem) //zabezpieczenie nie mozna upuszczac jak jest przedmiot
                 return false;
 
             var item = Player.Inventory.UnequipItem(handIndex);
@@ -133,5 +134,5 @@ namespace RPG_GAME.Model
             return false;
         }
 
-            }
-        }
+    }
+}

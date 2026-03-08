@@ -14,7 +14,8 @@ namespace RPG_GAME.UI
             _rows = rows;
             _cols = cols;
             _buffer = new char[rows, cols];
-            Console.OutputEncoding = Encoding.Unicode;
+            Console.OutputEncoding = Encoding.Unicode; // to dziala tylko tu dlatego to tu jest
+            //ale wiem czemu to tu dziala
         }
 
         public void Clear(char fill = ' ')

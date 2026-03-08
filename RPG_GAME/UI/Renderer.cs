@@ -7,17 +7,16 @@ namespace RPG_GAME.UI
     {
         private readonly ConsoleBuffer _buffer;
         private readonly RenderConfig _config;
-
         public Renderer()
         {
             _config = new RenderConfig();
-
             int bufferHeight = 30;
             int bufferWidth = World.Width + _config.PanelWidth;
-
             _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
-
+        //tak ma sie renderowac imo goated
+        //Mapa przed graczem aby bylo latwiej zeby gracz sie w scianie nie zrespil 
+        //tym bardziej po patchu z korytarzami
         public void Render(World world)
         {
             _buffer.Clear();
@@ -28,7 +27,7 @@ namespace RPG_GAME.UI
 
             _buffer.Flush();
         }
-
+        
         private void RenderMap(World world)
         {
             for (int y = 0; y < World.Height; y++)
@@ -41,17 +40,17 @@ namespace RPG_GAME.UI
                 }
             }
         }
-
+        //TeRnArY OpErAtOr
         private char GetTileCharacter(Tile tile)
         {
             return tile.IsWall ? _config.WallCharacter : _config.FloorCharacter;
         }
-
+        //Trzeba gracza polozyc gdzies tez nie
         private void RenderPlayer(Player player)
         {
             _buffer.PutChar(player.Pos.Y, player.Pos.X, _config.PlayerCharacter);
         }
-
+        //wypisanie tego wszystkiego
         private void RenderUI(Player player)
         {
             int currentRow = 0;
@@ -64,14 +63,14 @@ namespace RPG_GAME.UI
             currentRow = RenderEquipment(player, panelX, currentRow);
             RenderQuitOption(panelX, currentRow);
         }
-
+        //nazwa gry i tego co to stworzyl hahaha
         private int RenderHeader(int panelX, int startRow)
         {
             _buffer.PutString(startRow++, panelX, "RPG Game or sum");
             _buffer.PutString(startRow++, panelX, "by Faldekk");
             return startRow + 1;
         }
-
+        //ej ale ty wiesz jak chodzic cn?
         private int RenderControls(int panelX, int startRow)
         {
             _buffer.PutString(startRow++, panelX, "=== CONTROLS ===");
@@ -83,7 +82,7 @@ namespace RPG_GAME.UI
             _buffer.PutString(startRow++, panelX, "2 - drop right");
             return startRow + 1;
         }
-
+        //Money money money
         private int RenderCurrency(Player player, int panelX, int startRow)
         {
             _buffer.PutString(startRow++, panelX, "=== MONEY ===");
@@ -91,7 +90,7 @@ namespace RPG_GAME.UI
             _buffer.PutString(startRow++, panelX, $"Gold: {player.Stats.Gold}");
             return startRow + 1;
         }
-
+        // wypisz statystyki
         private int RenderStats(Player player, int panelX, int startRow)
         {
             _buffer.PutString(startRow++, panelX, "=== STATS ===");
@@ -103,7 +102,7 @@ namespace RPG_GAME.UI
             _buffer.PutString(startRow++, panelX, $"WISDOM: {player.Stats.Wisdom}");
             return startRow + 1;
         }
-
+        //Pomocy pisalem to 3 h  ale wypisuje itemy
         private int RenderEquipment(Player player, int panelX, int startRow)
         {
             _buffer.PutString(startRow++, panelX, "=== EQUIPMENT ===");
@@ -141,13 +140,13 @@ namespace RPG_GAME.UI
 
             return startRow + 1;
         }
-
+        // bardzo wazne
         private void RenderQuitOption(int panelX, int startRow)
         {
             _buffer.PutString(startRow, panelX, "Q - quit game");
         }
     }
-
+    //no i taka klasa zeby bylo latwiej dodawac rzeczy 
     public class RenderConfig
     {
         public int PanelWidth { get; set; } = 40;
@@ -155,6 +154,7 @@ namespace RPG_GAME.UI
         public char FloorCharacter { get; set; } = ' ';
         public char PlayerCharacter { get; set; } = '¶';
         public char ItemCharacter { get; set; } = 'x';
-        public char HealCharacter { get; set; } = '+';
+        //public char HealCharacter { get; set; } = '+';
+        //nie mam czasu tego zmieniac zmienie to na nastepny raz
     }
 }

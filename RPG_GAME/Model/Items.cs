@@ -26,6 +26,7 @@ namespace RPG_GAME.Model
         }
 
         public void Use()
+            //bron sie musi zuzywac ale nie uzywam tego
         {
             if (Durability > 0)
             {
@@ -33,9 +34,6 @@ namespace RPG_GAME.Model
             }
         }
 
-        public override string ToString()
-        {
-            return $"{Name} ({Type}) - DMG/HEAL: {Value}, Durability: {Durability}%";
-        }
+       // public override string ToString()        { return $"{Name} ({Type}) - DMG/HEAL: {Value}, Durability: {Durability}%"; }
     }
 }

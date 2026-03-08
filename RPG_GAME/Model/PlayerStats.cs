@@ -3,9 +3,10 @@ using System.Collections.Generic;
 
 namespace RPG_GAME.Model
 {
-    
+   
     public class PlayerStats
     {
+        //Tak zrobilem to slownikami bo fajniej imo i latwiej 
         private readonly Dictionary<string, int> _stats;
         private readonly Dictionary<string, int> _currency;
         public int Strength
@@ -57,7 +58,7 @@ namespace RPG_GAME.Model
             get => GetCurrency("Gold");
             set => SetCurrency("Gold", Math.Max(0, value));
         }
-
+        //na razie na readonly tam potem ale dodam zmiane statow
         public IReadOnlyDictionary<string, int> AllStats => _stats;
         public IReadOnlyDictionary<string, int> AllCurrency => _currency;
 

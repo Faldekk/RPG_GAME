@@ -2,6 +2,7 @@
 {
     public struct RectRoom
     {
+        //Struktura pokoi
         public int X;
         public int Y;
         public int Width;

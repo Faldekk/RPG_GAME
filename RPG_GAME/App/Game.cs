@@ -12,14 +12,16 @@ namespace RPG_GAME.App
         private bool _isRunning;
         private CommandHandler _commandChain;
 
+        // wszystkie dane do stworzenia gry 
         public Game()
         {
             _world = new World();
             _renderer = new Renderer();
             _input = new Input();
+            _isRunning = false;
             BuildCommandChain();
         }
-
+        //Responsibility chain as per suggested by lecturer :(
         private void BuildCommandChain()
         {
             var up = new MoveUpHandler();
@@ -45,10 +47,10 @@ namespace RPG_GAME.App
 
             _commandChain = up;
         }
-
+        //Tworzenie gry i jej dzialanie hell yeah 
         public void Run()
         {
-            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.ForegroundColor = ConsoleColor.White;
             Console.CursorVisible = false;
             _isRunning = true;
@@ -64,12 +66,12 @@ namespace RPG_GAME.App
             Console.Clear();
             Console.WriteLine("Thanks for playing!");
         }
-
+        // przejscie do klasy abstrakcyjnej zeby sie zaczal nasz ten piekny chain :(
         private void HandleCommand(InputCommand cmd)
         {
             _commandChain.Handle(cmd, _world, this);
         }
-
+        //Stop wait a minute hahahaha 
         public void Stop()
         {
             _isRunning = false;

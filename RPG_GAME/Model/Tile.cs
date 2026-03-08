@@ -2,6 +2,7 @@
 
 namespace RPG_GAME.Model
 {
+    //Tile representant XDDDD
     public class Tile
     {
         public bool IsWall { get; set; }

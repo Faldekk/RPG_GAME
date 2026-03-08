@@ -10,12 +10,11 @@ namespace RPG_GAME.Model
 
         public Items? LeftHand => _leftHand;
         public Items? RightHand => _rightHand;
-
         public bool HasTwoHandedWeapon =>
             (_leftHand?.IsTwoHanded ?? false) || (_rightHand?.IsTwoHanded ?? false);
 
         public PlayerInventory() { }
-
+        //we equip XDDDD
         public bool EquipItem(Items item, int handIndex)
         {
             if (handIndex < 0 || handIndex > 1)
@@ -38,7 +37,7 @@ namespace RPG_GAME.Model
 
             return true;
         }
-
+        // ta bo mozemy zrzucic bron bez broni (taki zarcik jak cos)
         public Items? UnequipItem(int handIndex)
         {
             if (handIndex < 0 || handIndex > 1)
@@ -61,7 +60,7 @@ namespace RPG_GAME.Model
 
             return unequipped;
         }
-
+        //nad tym bylo troche siedzenia ale wyszlo 
         public IEnumerable<Items> GetAllWeapons()
         {
             if (_leftHand != null) yield return _leftHand;
