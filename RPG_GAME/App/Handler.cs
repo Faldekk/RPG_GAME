@@ -10,7 +10,7 @@ namespace RPG_GAME.App
     //Nwm czy mi sie chce to tlumaczyc ale to to jest dosc proste
     public abstract class CommandHandler
     {
-        protected CommandHandler next;
+        protected CommandHandler? next;
 
         public void SetNext(CommandHandler nextHandler)
         {
@@ -128,9 +128,3 @@ namespace RPG_GAME.App
         }
     }
 }
-
-
-
-
-
-

@@ -9,7 +9,7 @@ namespace RPG_GAME.Model.Map
         {
             var rooms = new List<RectRoom>();
 
-            int roomCount = 5;
+            int roomCount = 7;
             int minSize = 4;
             int maxSize = 8;
 
@@ -52,7 +52,6 @@ namespace RPG_GAME.Model.Map
                         MapUtils.CarveHorizontalTunnel(tiles, previousRoom.CenterX, candidateRoom.CenterX, candidateRoom.CenterY);
                     }
                 }
-
                 rooms.Add(candidateRoom);
             }
 

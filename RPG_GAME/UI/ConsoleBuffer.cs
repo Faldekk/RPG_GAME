@@ -8,7 +8,6 @@ namespace RPG_GAME.UI
         private readonly int _rows;
         private readonly int _cols;
         private readonly char[,] _buffer;
-
         public ConsoleBuffer(int rows, int cols)
         {
             _rows = rows;

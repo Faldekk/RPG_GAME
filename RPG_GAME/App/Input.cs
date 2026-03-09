@@ -38,6 +38,7 @@ namespace RPG_GAME.App
                 ConsoleKey.X => InputCommand.SwapWeapons,      
                 ConsoleKey.D1 or ConsoleKey.NumPad1 => InputCommand.DropLeftHand,  
                 ConsoleKey.D2 or ConsoleKey.NumPad2 => InputCommand.DropRightHand, 
+                //Stare rzucanie broni D1 D2
                 ConsoleKey.Q or ConsoleKey.Escape => InputCommand.Quit,
                 _ => InputCommand.None
             };
