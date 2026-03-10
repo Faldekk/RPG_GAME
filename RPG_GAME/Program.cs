@@ -1,8 +1,8 @@
 ﻿using System;
 using RPG_GAME.App;
 
-const int requiredWidth = 80;
-const int requiredHeight = 30;
+const int requiredWidth = 90;
+const int requiredHeight = 40;
 
 Console.CursorVisible = false;
 

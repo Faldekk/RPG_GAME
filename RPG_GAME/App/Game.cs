@@ -29,7 +29,7 @@ namespace RPG_GAME.App
             var left = new MoveLeftHandler();
             var right = new MoveRightHandler();
             var pickup = new PickupHandler();
-            var drop = new DropHandler();
+            //var drop = new DropHandler();
             var swap = new SwapWeaponsHandler();
             var dropL = new DropLeftHandler();
             var dropR = new DropRightHandler();
@@ -39,8 +39,7 @@ namespace RPG_GAME.App
             down.SetNext(left);
             left.SetNext(right);
             right.SetNext(pickup);
-            pickup.SetNext(drop);
-            drop.SetNext(swap);
+            pickup.SetNext(swap);
             swap.SetNext(dropL);
             dropL.SetNext(dropR);
             dropR.SetNext(quit);

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace RPG_GAME.Model
 {
-   
     public class PlayerStats
     {
         //Tak zrobilem to slownikami bo fajniej imo i latwiej 

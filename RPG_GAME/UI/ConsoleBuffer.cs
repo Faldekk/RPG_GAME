@@ -13,8 +13,7 @@ namespace RPG_GAME.UI
             _rows = rows;
             _cols = cols;
             _buffer = new char[rows, cols];
-            Console.OutputEncoding = Encoding.Unicode; // to dziala tylko tu dlatego to tu jest
-            //ale wiem czemu to tu dziala
+            Console.OutputEncoding = Encoding.Unicode;
         }
 
         public void Clear(char fill = ' ')
@@ -39,7 +38,6 @@ namespace RPG_GAME.UI
                 PutChar(row, col + i, text[i]);
             }
         }
-
         public void Flush()
         {
             var sb = new StringBuilder(_rows * (_cols + 1));

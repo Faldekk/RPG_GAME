@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using RPG_GAME.Model.Map;
 namespace RPG_GAME.Model
 {
     public readonly struct Vec2
     {
+       // public readonly List<RectRoom> rooms;
         public int X { get; }
         public int Y { get; }
 
@@ -16,7 +17,6 @@ namespace RPG_GAME.Model
             X = x;
             Y = y;
         }
-        //Przekminka mocna byla
         public Vec2 Add(int dx, int dy)
         {
             return new Vec2(X + dx, Y + dy);

@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Diagnostics.Tracing;
 using RPG_GAME.Model;
-
+using RPG_GAME.App;
 namespace RPG_GAME.UI
 {
     public class Renderer
@@ -23,7 +24,7 @@ namespace RPG_GAME.UI
 
             RenderMap(world);
             RenderPlayer(world.Player);
-            RenderUI(world.Player);
+            RenderUI(world.Player, world);
 
             _buffer.Flush();
         }
@@ -51,13 +52,23 @@ namespace RPG_GAME.UI
             _buffer.PutChar(player.Pos.Y, player.Pos.X, _config.PlayerCharacter);
         }
         //wypisanie tego wszystkiego
-        private void RenderUI(Player player)
+        private void RenderUI(Player player, World world)
         {
+
+          
             int currentRow = 0;
             int panelX = World.Width + 2;
 
+            int x = player.Pos.X;
+            int y = player.Pos.Y;
+            var Tile = world.GetTile(x, y);
+
             currentRow = RenderHeader(panelX, currentRow);
             currentRow = RenderControls(panelX, currentRow);
+            if (Tile.HasItem);
+            {
+                currentRow = RenderPickupDrop(panelX, currentRow);     
+            }
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
             currentRow = RenderEquipment(player, panelX, currentRow);
@@ -76,11 +87,16 @@ namespace RPG_GAME.UI
             _buffer.PutString(startRow++, panelX, "=== CONTROLS ===");
             _buffer.PutString(startRow++, panelX, "WASD - move");
             _buffer.PutString(startRow++, panelX, "E - pick up");
-            _buffer.PutString(startRow++, panelX, "G - drop");
             _buffer.PutString(startRow++, panelX, "X - swap hands");
+           
+            return startRow + 1;
+        }
+        private int RenderPickupDrop(int panelX, int startRow)
+        {
             _buffer.PutString(startRow++, panelX, "1 - drop left");
             _buffer.PutString(startRow++, panelX, "2 - drop right");
-            return startRow + 1;
+            _buffer.PutString(startRow++, panelX, "WASD - move");
+            return startRow+1;
         }
         //Money money money
         private int RenderCurrency(Player player, int panelX, int startRow)
@@ -149,7 +165,7 @@ namespace RPG_GAME.UI
     //no i taka klasa zeby bylo latwiej dodawac rzeczy 
     public class RenderConfig
     {
-        public int PanelWidth { get; set; } = 40;
+        public int PanelWidth { get; set; } = 50;
         public char WallCharacter { get; set; } = '█';
         public char FloorCharacter { get; set; } = ' ';
         public char PlayerCharacter { get; set; } = '¶';
