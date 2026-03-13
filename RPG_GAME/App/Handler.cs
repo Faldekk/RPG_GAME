@@ -75,18 +75,6 @@ namespace RPG_GAME.App
             return true;
         }
     }
-    public class DropHandler : CommandHandler
-    {
-        protected override bool Process(InputCommand cmd, World world, Game game)
-        {
-            if (cmd != InputCommand.Drop) return false;
-
-            if (!world.TryDropItem(0))
-                world.TryDropItem(1);
-
-            return true;
-        }
-    }
     public class SwapWeaponsHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)

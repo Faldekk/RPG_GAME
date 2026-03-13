@@ -59,6 +59,7 @@ namespace RPG_GAME.Model
                 if (!_tiles[randomY, randomX].IsWall && !_tiles[randomY, randomX].HasItem)
                 {
                     _tiles[randomY, randomX].Item = WeaponGenerator.GenerateRandomWeapon(randomX, randomY);
+                    _tiles[randomY, randomX].HasItem = true;
                     spawned++;
                 }
 
