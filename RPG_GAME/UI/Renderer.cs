@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Diagnostics.Tracing;
 using RPG_GAME.Model;
-using RPG_GAME.App;
+
 namespace RPG_GAME.UI
 {
     public class Renderer
@@ -51,21 +50,18 @@ namespace RPG_GAME.UI
         {
             _buffer.PutChar(player.Pos.Y, player.Pos.X, _config.PlayerCharacter);
         }
-        //wypisanie tego wszystkiego
         private void RenderUI(Player player, World world)
         {
-
-          
             int currentRow = 0;
             int panelX = World.Width + 2;
 
             int x = player.Pos.X;
             int y = player.Pos.Y;
-            var Tile = world.GetTile(x, y);
+            var tile = world.GetTile(y, x);
 
             currentRow = RenderHeader(panelX, currentRow);
             currentRow = RenderControls(panelX, currentRow);
-            if (Tile.HasItem);
+            if (tile.HasItem)
             {
                 currentRow = RenderPickupDrop(panelX, currentRow);     
             }

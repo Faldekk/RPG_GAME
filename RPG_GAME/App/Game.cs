@@ -1,5 +1,4 @@
-﻿using System;
-using RPG_GAME.Model;
+﻿using RPG_GAME.Model;
 using RPG_GAME.UI;
 
 namespace RPG_GAME.App
@@ -10,67 +9,65 @@ namespace RPG_GAME.App
         private readonly Renderer _renderer;
         private readonly Input _input;
         private bool _isRunning;
-        private CommandHandler _commandChain;
 
-        // wszystkie dane do stworzenia gry 
         public Game()
         {
             _world = new World();
             _renderer = new Renderer();
             _input = new Input();
-            _isRunning = false;
-            BuildCommandChain();
         }
-        //Responsibility chain as per suggested by lecturer :(
-        private void BuildCommandChain()
-        {
-            var up = new MoveUpHandler();
-            var down = new MoveDownHandler();
-            var left = new MoveLeftHandler();
-            var right = new MoveRightHandler();
-            var pickup = new PickupHandler();
-            //var drop = new DropHandler();
-            var swap = new SwapWeaponsHandler();
-            var dropL = new DropLeftHandler();
-            var dropR = new DropRightHandler();
-            var quit = new QuitHandler();
 
-            up.SetNext(down);
-            down.SetNext(left);
-            left.SetNext(right);
-            right.SetNext(pickup);
-            pickup.SetNext(swap);
-            swap.SetNext(dropL);
-            dropL.SetNext(dropR);
-            dropR.SetNext(quit);
-
-            _commandChain = up;
-        }
-        //Tworzenie gry i jej dzialanie hell yeah 
         public void Run()
         {
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.CursorVisible = false;
             _isRunning = true;
 
             while (_isRunning)
             {
                 _renderer.Render(_world);
 
-                var cmd = _input.ReadCommand();
-                HandleCommand(cmd);
+                var command = _input.ReadCommand();
+                HandleCommand(command);
             }
+        }
 
-            Console.Clear();
-            Console.WriteLine("Thanks for playing!");
-        }
-        // przejscie do klasy abstrakcyjnej zeby sie zaczal nasz ten piekny chain :(
-        private void HandleCommand(InputCommand cmd)
+        private void HandleCommand(InputCommand command)
         {
-            _commandChain.Handle(cmd, _world, this);
+            switch (command)
+            {
+                case InputCommand.Up:
+                    _world.TryMovePlayer(0, -1);
+                    break;
+                case InputCommand.Down:
+                    _world.TryMovePlayer(0, 1);
+                    break;
+                case InputCommand.Left:
+                    _world.TryMovePlayer(-1, 0);
+                    break;
+                case InputCommand.Right:
+                    _world.TryMovePlayer(1, 0);
+                    break;
+                case InputCommand.Pickup:
+                    _world.TryPickUpItem();
+                    break;
+                case InputCommand.Drop:
+                    if (!_world.TryDropItem(0))
+                        _world.TryDropItem(1);
+                    break;
+                case InputCommand.SwapWeapons:
+                    _world.Player.SwapWeapons();
+                    break;
+                case InputCommand.DropLeftHand:
+                    _world.TryDropItem(0);
+                    break;
+                case InputCommand.DropRightHand:
+                    _world.TryDropItem(1);
+                    break;
+                case InputCommand.Quit:
+                    Stop();
+                    break;
+            }
         }
-        //Stop wait a minute hahahaha 
+
         public void Stop()
         {
             _isRunning = false;

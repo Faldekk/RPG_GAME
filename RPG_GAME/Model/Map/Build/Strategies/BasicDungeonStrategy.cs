@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RPG_GAME.Model.Map.MapBuilder
+namespace RPG_GAME.Model.Map.Build.Strategies
 {
-    internal class IInstructionAwareBuildStep
+    internal class BasicDungeonStrategy
     {
     }
 }

@@ -1,80 +1,55 @@
-﻿using System;
-using RPG_GAME.Model.Map;
+﻿using RPG_GAME.Model.Instructions;
+using RPG_GAME.Model.Map.Build;
+using RPG_GAME.Model.Map.Build.Strategies;
 
 namespace RPG_GAME.Model
 {
     public class World
     {
-        //tak jak w wymaganiach 
         public const int Height = 20;
         public const int Width = 40;
 
         private readonly Tile[,] _tiles;
+
         public Player Player { get; }
+        public InstructionCatalog Instructions { get; }
 
         public World()
+            : this(new DungeonGroundsStrategy())
         {
-            _tiles = new Tile[Height, Width];
+        }
+
+        public World(IDungeonBuildStrategy strategy)
+        {
             Player = new Player(new Vec2(1, 1));
-            InitializeTiles();
+
+            var builder = strategy.CreateBuilder();
+            var context = builder.Build(Width, Height);
+
+            _tiles = context.Tiles;
+            Instructions = builder.BuildInstructions();
+
+            SpawnPlayer(context);
         }
 
-        private void InitializeTiles()
+        private void SpawnPlayer(DungeonBuildContext context)
         {
-            for (int y = 0; y < Height; y++)
+            if (context.Rooms.Count > 0)
             {
-                for (int x = 0; x < Width; x++)
-                {
-                    _tiles[y, x] = new Tile(true);
-                }
-            }
-            //wiem ze to RectRoom ale fajnie jak moge var uzywac
-            var rooms = DungeonGenerator.Generate(_tiles, Width, Height);
-
-            if (rooms.Count > 0)
-            {
-                var start = rooms[0];
+                var start = context.Rooms[0];
                 Player.MoveTo(new Vec2(start.CenterX, start.CenterY));
-            }
-            else
-            {
-                _tiles[1, 1].IsWall = false;
-                Player.MoveTo(new Vec2(1, 1));
+                return;
             }
 
-            SpawnRandomWeapons(10);
+            _tiles[1, 1].IsWall = false;
+            Player.MoveTo(new Vec2(1, 1));
         }
 
-        private void SpawnRandomWeapons(int count)
-        {
-            int spawned = 0;
-            int attempts = 0;
-            int maxAttempts = count * 20;
+        public Tile GetTile(int y, int x) => _tiles[y, x];
 
-            while (spawned < count && attempts < maxAttempts)
-            {
-                int randomY = Random.Shared.Next(1, Height - 1);
-                int randomX = Random.Shared.Next(1, Width - 1);
-
-                if (!_tiles[randomY, randomX].IsWall && !_tiles[randomY, randomX].HasItem)
-                {
-                    _tiles[randomY, randomX].Item = WeaponGenerator.GenerateRandomWeapon(randomX, randomY);
-                    _tiles[randomY, randomX].HasItem = true;
-                    spawned++;
-                }
-
-                attempts++;
-            }
-        }
-        //zobaczmy co tam jest XDDDD
-        public Tile GetTile(int y, int x)
-        {
-            return _tiles[y, x];
-        }
-        //poruszanie sie 
         public bool TryMovePlayer(int dx, int dy)
         {
-            Vec2 next = Player.Pos.Add(dx, dy);
+            var next = Player.Pos.Add(dx, dy);
 
             if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
                 return false;
@@ -85,14 +60,12 @@ namespace RPG_GAME.Model
             Player.MoveTo(next);
             return true;
         }
-        //musze dodac jedna rzecz bo jest bug ale nie powiem jaki, ale nie wplywa na rozgrywke
+
         public bool TryPickUpItem()
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
             var item = tile.Item;
-
-            if (item == null)
-                return false;
+            if (item == null) return false;
 
             if (item.IsTwoHanded && Player.Inventory.LeftHand != null && Player.Inventory.RightHand != null)
                 return false;
@@ -105,35 +78,30 @@ namespace RPG_GAME.Model
 
             if (!Player.Inventory.EquipItem(item, hand))
             {
-                if (displaced != null) Player.Inventory.EquipItem(displaced, hand);
+                if (displaced != null)
+                    Player.Inventory.EquipItem(displaced, hand);
                 return false;
             }
 
             tile.Item = displaced;
+
             if (displaced != null)
                 displaced.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
 
             return true;
         }
-        //puszczam item
+
         public bool TryDropItem(int handIndex)
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
-
-            if (tile.HasItem) //zabezpieczenie nie mozna upuszczac jak jest przedmiot
-                return false;
+            if (tile.HasItem) return false;
 
             var item = Player.Inventory.UnequipItem(handIndex);
+            if (item == null) return false;
 
-            if (item != null)
-            {
-                item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
-                tile.Item = item;
-                return true;
-            }
-
-            return false;
+            item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+            tile.Item = item;
+            return true;
         }
-
     }
 }
