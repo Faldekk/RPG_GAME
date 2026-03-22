@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using RPG_GAME.Model.DungeonBuilding;
 
 namespace RPG_GAME.Model
@@ -9,8 +10,10 @@ namespace RPG_GAME.Model
         public const int Width = 40;
 
         private readonly Tile[,] _tiles;
+        private readonly List<string> _messageLog = new();
 
         public Player Player { get; }
+        public IReadOnlyList<string> MessageLog => _messageLog;
 
         public World()
             : this(new DungeonGroundsStrategy())
@@ -25,6 +28,20 @@ namespace RPG_GAME.Model
             var context = strategy.Build(_tiles, Width, Height);
             SpawnPlayer(context);
             SpawnRandomWeapons(10);
+            SpawnRandomItems(8);
+            SpawnCurrencyItems(2, 2);
+        }
+
+        public void AddMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
+            _messageLog.Add(message);
+
+            const int maxMessages = 6;
+            if (_messageLog.Count > maxMessages)
+                _messageLog.RemoveAt(0);
         }
 
         private void SpawnPlayer(BuildContext context)
@@ -47,7 +64,7 @@ namespace RPG_GAME.Model
             Player.MoveTo(new Vec2(1, 1));
         }
 
-        private void SpawnRandomWeapons(int count)
+        private List<(int y, int x)> GetAvailableFloorTiles()
         {
             var availableTiles = new List<(int y, int x)>();
 
@@ -55,12 +72,18 @@ namespace RPG_GAME.Model
             {
                 for (int x = 1; x < Width - 1; x++)
                 {
-                    if (!_tiles[y, x].IsWall && !_tiles[y, x].HasItem)
+                    if (!_tiles[y, x].IsWall && _tiles[y, x].Item == null)
                         availableTiles.Add((y, x));
                 }
             }
 
-            int toSpawn = System.Math.Min(count, availableTiles.Count);
+            return availableTiles;
+        }
+
+        private void SpawnRandomWeapons(int count)
+        {
+            var availableTiles = GetAvailableFloorTiles();
+            int toSpawn = Math.Min(count, availableTiles.Count);
 
             for (int i = 0; i < toSpawn; i++)
             {
@@ -70,6 +93,42 @@ namespace RPG_GAME.Model
 
                 _tiles[y, x].Item = WeaponGenerator.GenerateRandomWeapon(x, y);
             }
+        }
+
+        public void SpawnRandomItems(int count)
+        {
+            var availableTiles = GetAvailableFloorTiles();
+            int toSpawn = Math.Min(count, availableTiles.Count);
+
+            for (int i = 0; i < toSpawn; i++)
+            {
+                int pickIndex = Random.Shared.Next(availableTiles.Count);
+                var (y, x) = availableTiles[pickIndex];
+                availableTiles.RemoveAt(pickIndex);
+
+                _tiles[y, x].Item = ItemGenerator.GenerateRandomNonWeapon(new Vec2(x, y));
+            }
+        }
+
+        private void SpawnCurrencyItems(int coinCount, int goldCount)
+        {
+            var availableTiles = GetAvailableFloorTiles();
+
+            void SpawnCurrency(int count, Func<Vec2, Items> factory)
+            {
+                int toSpawn = Math.Min(count, availableTiles.Count);
+
+                for (int i = 0; i < toSpawn; i++)
+                {
+                    int pickIndex = Random.Shared.Next(availableTiles.Count);
+                    var (y, x) = availableTiles[pickIndex];
+                    availableTiles.RemoveAt(pickIndex);
+                    _tiles[y, x].Item = factory(new Vec2(x, y));
+                }
+            }
+
+            SpawnCurrency(coinCount, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(5, 16)));
+            SpawnCurrency(goldCount, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
         }
 
         public Tile GetTile(int y, int x) => _tiles[y, x];
@@ -92,43 +151,199 @@ namespace RPG_GAME.Model
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
             var item = tile.Item;
-            if (item == null) return false;
 
-            if (item.IsTwoHanded && Player.Inventory.LeftHand != null && Player.Inventory.RightHand != null)
-                return false;
-
-            int hand = item.IsTwoHanded
-                ? (Player.Inventory.LeftHand != null ? 0 : Player.Inventory.RightHand != null ? 1 : 0)
-                : (Player.Inventory.LeftHand == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0);
-
-            var displaced = Player.Inventory.UnequipItem(hand);
-
-            if (!Player.Inventory.EquipItem(item, hand))
+            if (item == null)
             {
-                if (displaced != null)
-                    Player.Inventory.EquipItem(displaced, hand);
+                AddMessage("Cannot pick up: no item here.");
                 return false;
             }
 
-            tile.Item = displaced;
+            if (TryCollectCurrency(item))
+            {
+                tile.Item = null;
+                AddMessage($"Collected {item.Value} {item.Name}.");
+                return true;
+            }
 
-            if (displaced != null)
-                displaced.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+            if (IsWeapon(item))
+            {
+                if (TryEquipWeapon(item))
+                {
+                    tile.Item = null;
+                    ApplyWeaponBonuses(item);
+                    AddMessage($"Equipped {item.Name}.");
+                    return true;
+                }
 
+                Player.Inventory.AddToBackpack(item);
+                tile.Item = null;
+                AddMessage($"Stored {item.Name} in backpack.");
+                return true;
+            }
+
+            Player.Inventory.AddToBackpack(item);
+            tile.Item = null;
+            AddMessage($"Picked up {item.Name}.");
+            return true;
+        }
+
+        public bool TryBackpackAction()
+        {
+            if (Player.Inventory.Backpack.Count == 0)
+            {
+                AddMessage("Backpack is empty.");
+                return false;
+            }
+
+            int lastIndex = Player.Inventory.Backpack.Count - 1;
+            var lastItem = Player.Inventory.Backpack[lastIndex];
+
+            if (IsWeapon(lastItem) && TryEquipWeapon(lastItem))
+            {
+                Player.Inventory.RemoveFromBackpack(lastIndex);
+                ApplyWeaponBonuses(lastItem);
+                AddMessage($"Equipped {lastItem.Name} from backpack.");
+                return true;
+            }
+
+            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            if (tile.Item != null)
+            {
+                AddMessage("Cannot drop backpack item: tile already has an item.");
+                return false;
+            }
+
+            var removed = Player.Inventory.RemoveFromBackpack(lastIndex);
+            if (removed == null)
+            {
+                AddMessage("Backpack action failed.");
+                return false;
+            }
+
+            removed.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+            tile.Item = removed;
+            AddMessage($"Dropped {removed.Name} from backpack.");
             return true;
         }
 
         public bool TryDropItem(int handIndex)
         {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
-            if (tile.HasItem) return false;
+            if (tile.Item != null)
+            {
+                AddMessage("Cannot drop: tile already has an item.");
+                return false;
+            }
 
             var item = Player.Inventory.UnequipItem(handIndex);
-            if (item == null) return false;
+            if (item == null)
+            {
+                AddMessage("Cannot drop: selected hand is empty.");
+                return false;
+            }
+
+            if (IsWeapon(item))
+                RemoveWeaponBonuses(item);
 
             item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
             tile.Item = item;
+            AddMessage($"Dropped {item.Name}.");
             return true;
+        }
+
+        private bool TryEquipWeapon(Items item)
+        {
+            if (item.IsTwoHanded)
+            {
+                if (Player.Inventory.LeftHand != null || Player.Inventory.RightHand != null)
+                    return false;
+
+                return Player.Inventory.EquipItem(item, 0);
+            }
+
+            if (Player.Inventory.LeftHand == null)
+                return Player.Inventory.EquipItem(item, 0);
+
+            if (Player.Inventory.RightHand == null)
+                return Player.Inventory.EquipItem(item, 1);
+
+            return false;
+        }
+
+        private void ApplyWeaponBonuses(Items weapon)
+        {
+            var (strength, dexterity, aggression, wisdom, luck) = GetWeaponStatBonuses(weapon);
+            Player.Stats.ModifyStat("Strength", strength);
+            Player.Stats.ModifyStat("Dexterity", dexterity);
+            Player.Stats.ModifyStat("Agression", aggression);
+            Player.Stats.ModifyStat("Wisdom", wisdom);
+            Player.Stats.ModifyStat("Luck", luck);
+        }
+
+        private void RemoveWeaponBonuses(Items weapon)
+        {
+            var (strength, dexterity, aggression, wisdom, luck) = GetWeaponStatBonuses(weapon);
+            Player.Stats.ModifyStat("Strength", -strength);
+            Player.Stats.ModifyStat("Dexterity", -dexterity);
+            Player.Stats.ModifyStat("Agression", -aggression);
+            Player.Stats.ModifyStat("Wisdom", -wisdom);
+            Player.Stats.ModifyStat("Luck", -luck);
+        }
+
+        private static (int strength, int dexterity, int aggression, int wisdom, int luck) GetWeaponStatBonuses(Items weapon)
+        {
+            int strength = 0;
+            int dexterity = 0;
+            int aggression = 0;
+            int wisdom = 0;
+            int luck = 0;
+
+            if (weapon.Type.Equals("Melee", StringComparison.OrdinalIgnoreCase))
+            {
+                strength += Math.Max(1, weapon.Value / 4);
+                aggression += 1;
+                if (weapon.IsTwoHanded)
+                    strength += 2;
+            }
+
+            if (weapon.Type.Equals("Magic", StringComparison.OrdinalIgnoreCase))
+            {
+                wisdom += Math.Max(1, weapon.Value / 5);
+                luck += 1;
+                if (weapon.IsTwoHanded)
+                    wisdom += 2;
+            }
+
+            if (!weapon.IsTwoHanded)
+                dexterity += 1;
+
+            return (strength, dexterity, aggression, wisdom, luck);
+        }
+
+        private bool TryCollectCurrency(Items item)
+        {
+            if (!item.Type.Equals("Currency", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (item.Name.Equals("Coins", StringComparison.OrdinalIgnoreCase))
+            {
+                Player.Stats.ModifyCurrency("Coins", item.Value);
+                return true;
+            }
+
+            if (item.Name.Equals("Gold", StringComparison.OrdinalIgnoreCase))
+            {
+                Player.Stats.ModifyCurrency("Gold", item.Value);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsWeapon(Items item)
+        {
+            return item.Type.Equals("Melee", StringComparison.OrdinalIgnoreCase) ||
+                   item.Type.Equals("Magic", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -11,10 +11,9 @@ namespace RPG_GAME.UI
 
         public ConsoleBuffer(int rows, int cols)
         {
-            _rows = rows;
-            _cols = cols;
-            _buffer = new char[rows, cols];
-            Console.OutputEncoding = Encoding.Unicode;
+            _rows = ClampRows(rows);
+            _cols = ClampCols(cols);
+            _buffer = new char[_rows, _cols];
         }
 
         public void Clear(char fill = ' ')
@@ -35,14 +34,26 @@ namespace RPG_GAME.UI
         public void PutString(int row, int col, string text)
         {
             for (int i = 0; i < text.Length; i++)
-            {
                 PutChar(row, col + i, text[i]);
-            }
         }
 
         public void Flush()
         {
-            var sb = new StringBuilder(_rows * (_cols + 1));
+            if (ConsoleHost.IsOutputRedirected)
+            {
+                FlushRedirected();
+                return;
+            }
+
+            ConsoleHost.ResetCursor();
+
+            for (int y = 0; y < _rows; y++)
+                ConsoleHost.WriteAt(0, y, GetRowText(y));
+        }
+
+        private void FlushRedirected()
+        {
+            var sb = new StringBuilder(_rows * (_cols + Environment.NewLine.Length));
 
             for (int y = 0; y < _rows; y++)
             {
@@ -50,19 +61,37 @@ namespace RPG_GAME.UI
                     sb.Append(_buffer[y, x]);
 
                 if (y < _rows - 1)
-                    sb.Append('\n');
+                    sb.Append(Environment.NewLine);
             }
 
-            try
-            {
-                if (!Console.IsOutputRedirected)
-                    Console.SetCursorPosition(0, 0);
-            }
-            catch
-            {
-            }
+            ConsoleHost.Write(sb.ToString());
+        }
 
-            Console.Write(sb.ToString());
+        private string GetRowText(int row)
+        {
+            var chars = new char[_cols];
+            for (int x = 0; x < _cols; x++)
+                chars[x] = _buffer[row, x];
+
+            return new string(chars);
+        }
+
+        private static int ClampRows(int requestedRows)
+        {
+            if (ConsoleHost.IsOutputRedirected)
+                return Math.Max(1, requestedRows);
+
+            int limit = Math.Max(1, ConsoleHost.WindowHeight - 1);
+            return Math.Max(1, Math.Min(requestedRows, limit));
+        }
+
+        private static int ClampCols(int requestedCols)
+        {
+            if (ConsoleHost.IsOutputRedirected)
+                return Math.Max(1, requestedCols);
+
+            int limit = Math.Max(1, ConsoleHost.WindowWidth - 1);
+            return Math.Max(1, Math.Min(requestedCols, limit));
         }
     }
 }

@@ -23,16 +23,12 @@ namespace RPG_GAME.Model.Instructions
         {
             var catalog = new InstructionCatalog();
 
-            
             catalog.Add("WASD / Arrows", "Move around the dungeon");
             catalog.Add("Q / Esc", "Quit the game");
 
             foreach (var step in steps)
             {
-                if (step is IInstructionAwareBuildStep aware) 
-                {
-                    aware.AppendInstructions(catalog._entries);
-                }
+                catalog.AddRange(step.GetInstructions());
             }
 
             return catalog;

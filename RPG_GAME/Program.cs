@@ -1,31 +1,17 @@
-﻿using System;
-using RPG_GAME.App;
+﻿using RPG_GAME.App;
+using RPG_GAME.Model;
+using RPG_GAME.UI;
 
-const int requiredWidth = 90;
-const int requiredHeight = 40;
+const int requiredWidth = World.Width + 50;
+const int requiredHeight = 36;
 
-Console.CursorVisible = false;
+ConsoleHost.Initialize(requiredWidth, requiredHeight);
 
 try
 {
-    if (Console.BufferWidth < requiredWidth) Console.BufferWidth = requiredWidth;
-    if (Console.BufferHeight < requiredHeight) Console.BufferHeight = requiredHeight;
-    if (Console.WindowWidth < requiredWidth) Console.WindowWidth = requiredWidth;
-    if (Console.WindowHeight < requiredHeight) Console.WindowHeight = requiredHeight;
-    Console.SetWindowSize(requiredWidth, requiredHeight);
+    new Game().Run();
 }
-catch { }
-
-if (Console.WindowWidth < requiredWidth ||
-    Console.WindowHeight < requiredHeight ||
-    Console.BufferWidth < requiredWidth ||
-    Console.BufferHeight < requiredHeight)
+finally
 {
-    Console.WriteLine($"Console too small. Required: {requiredWidth} x {requiredHeight}");
-    Console.CursorVisible = true;
-    return;
+    ConsoleHost.Shutdown();
 }
-
-Console.Clear();
-new Game().Run();
-Console.CursorVisible = true;

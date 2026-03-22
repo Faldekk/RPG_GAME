@@ -1,4 +1,5 @@
-﻿using RPG_GAME.Model;
+﻿using System.Threading;
+using RPG_GAME.Model;
 using RPG_GAME.UI;
 
 namespace RPG_GAME.App
@@ -20,13 +21,23 @@ namespace RPG_GAME.App
         public void Run()
         {
             _isRunning = true;
+            _renderer.Render(_world);
 
             while (_isRunning)
             {
-                _renderer.Render(_world);
-
                 var command = _input.ReadCommand();
+                if (command == InputCommand.None)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
                 HandleCommand(command);
+
+                if (!_isRunning)
+                    break;
+
+                _renderer.Render(_world);
             }
         }
 
@@ -34,6 +45,11 @@ namespace RPG_GAME.App
         {
             switch (command)
             {
+                case InputCommand.None:
+                    break;
+                case InputCommand.Unknown:
+                    _world.AddMessage("Unknown command");
+                    break;
                 case InputCommand.Up:
                     _world.TryMovePlayer(0, -1);
                     break;
@@ -52,6 +68,9 @@ namespace RPG_GAME.App
                 case InputCommand.Drop:
                     if (!_world.TryDropItem(0))
                         _world.TryDropItem(1);
+                    break;
+                case InputCommand.BackpackAction:
+                    _world.TryBackpackAction();
                     break;
                 case InputCommand.SwapWeapons:
                     _world.Player.SwapWeapons();

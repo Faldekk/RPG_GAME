@@ -11,7 +11,7 @@ namespace RPG_GAME.UI
         public Renderer()
         {
             _config = new RenderConfig();
-            int bufferHeight = 30;
+            int bufferHeight = 36;
             int bufferWidth = World.Width + _config.PanelWidth;
             _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
@@ -35,7 +35,7 @@ namespace RPG_GAME.UI
                 for (int x = 0; x < World.Width; x++)
                 {
                     var tile = world.GetTile(y, x);
-                    char ch = tile.HasItem ? _config.ItemCharacter : GetTileCharacter(tile);
+                    char ch = tile.Item != null ? _config.ItemCharacter : GetTileCharacter(tile);
                     _buffer.PutChar(y, x, ch);
                 }
             }
@@ -54,8 +54,8 @@ namespace RPG_GAME.UI
         private void RenderBottomControls()
         {
             int row = World.Height + 1;
-            _buffer.PutString(row++, 0, "[WASD] move  [E] pick up  [X] swap");
-            _buffer.PutString(row++, 0, "[1] drop left  [2] drop right  [Q] quit");
+            _buffer.PutString(row++, 0, "[WASD] move  [E] pick up  [G] backpack");
+            _buffer.PutString(row++, 0, "[X] swap  [1] drop left  [2] drop right  [Q] quit");
         }
 
         private void RenderUI(Player player, World world)
@@ -68,15 +68,12 @@ namespace RPG_GAME.UI
             var tile = world.GetTile(y, x);
 
             currentRow = RenderHeader(panelX, currentRow);
-            //currentRow = RenderControls(panelX, currentRow);
-            if (tile.HasItem)
-            {
-                currentRow = RenderPickupDrop(panelX, currentRow, tile.Item);
-            }
+            currentRow = RenderCurrentTileInfo(panelX, currentRow, tile.Item);
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
             currentRow = RenderEquipment(player, panelX, currentRow);
-            RenderQuitOption(panelX, currentRow);
+            currentRow = RenderMessageLog(panelX, currentRow, world);
+           // RenderQuitOption(panelX, currentRow);
         }
 
         private int RenderHeader(int panelX, int startRow)
@@ -86,20 +83,20 @@ namespace RPG_GAME.UI
             return startRow + 1;
         }
 
-        private int RenderControls(int panelX, int startRow)
+        private int RenderCurrentTileInfo(int panelX, int startRow, Items? item)
         {
-            _buffer.PutString(startRow++, panelX, "=== CONTROLS ===");
-            _buffer.PutString(startRow++, panelX, "WASD - move");
-            _buffer.PutString(startRow++, panelX, "E - pick up");
-            _buffer.PutString(startRow++, panelX, "X - swap hands");
+            _buffer.PutString(startRow++, panelX, "=== CURRENT TILE INFO ===");
 
-            return startRow + 1;
-        }
+            if (item == null)
+            {
+                _buffer.PutString(startRow++, panelX, "Item: (none)");
+                return startRow + 1;
+            }
 
-        private int RenderPickupDrop(int panelX, int startRow, Items? item)
-        {
-            if (item != null)
-                _buffer.PutString(startRow++, panelX, $"On ground: {item.Name}");
+            _buffer.PutString(startRow++, panelX, $"Name: {item.Name}");
+            _buffer.PutString(startRow++, panelX, $"Type: {item.Type}");
+            _buffer.PutString(startRow++, panelX, $"Value: {item.Value}");
+            _buffer.PutString(startRow++, panelX, $"Durability: {item.Durability}");
             return startRow + 1;
         }
 
@@ -133,10 +130,8 @@ namespace RPG_GAME.UI
             if (leftHand == null && rightHand == null)
             {
                 _buffer.PutString(startRow++, panelX, "No weapons yet");
-                return startRow + 1;
             }
-
-            if (player.Inventory.HasTwoHandedWeapon)
+            else if (player.Inventory.HasTwoHandedWeapon)
             {
                 var weapon = leftHand ?? rightHand;
                 if (weapon != null)
@@ -158,13 +153,32 @@ namespace RPG_GAME.UI
                 _buffer.PutString(startRow++, panelX, rightText);
             }
 
+            _buffer.PutString(startRow++, panelX, $"Backpack: {player.Inventory.Backpack.Count}");
             return startRow + 1;
         }
 
-        private void RenderQuitOption(int panelX, int startRow)
+        private int RenderMessageLog(int panelX, int startRow, World world)
         {
-            _buffer.PutString(startRow, panelX, "Q - quit game");
+            _buffer.PutString(startRow++, panelX, "=== MESSAGE LOG ===");
+
+            if (world.MessageLog.Count == 0)
+            {
+                _buffer.PutString(startRow++, panelX, "(no messages)");
+                return startRow + 1;
+            }
+
+            foreach (var message in world.MessageLog)
+            {
+                _buffer.PutString(startRow++, panelX, $"- {message}");
+            }
+
+            return startRow + 1;
         }
+
+        //private void RenderQuitOption(int panelX, int startRow)
+        //{
+        //    _buffer.PutString(startRow, panelX, "Q - quit game");
+        //}
     }
 
     public class RenderConfig

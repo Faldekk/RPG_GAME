@@ -24,7 +24,7 @@ namespace RPG_GAME.Model.Map.Build.Steps
                 int x = Random.Shared.Next(1, context.Width - 1);
 
                 var tile = context.Tiles[y, x];
-                if (!tile.IsWall && !tile.HasItem)
+                if (!tile.IsWall && tile.Item == null)
                 {
                     tile.Item = WeaponGenerator.GenerateRandomWeapon(x, y);
                     spawned++;

@@ -18,7 +18,5 @@ namespace RPG_GAME.Model
 
 
         }
-
-        public bool HasItem => Item != null;
     }
 }
