@@ -5,6 +5,8 @@ namespace RPG_GAME.Model
 {
     public class PlayerInventory
     {
+        private const int BackpackCapacity = 10;
+
         private readonly List<Items> _backpack = new();
         private Items? _leftHand;
         private Items? _rightHand;
@@ -12,13 +14,13 @@ namespace RPG_GAME.Model
         public Items? LeftHand => _leftHand;
         public Items? RightHand => _rightHand;
         public IReadOnlyList<Items> Backpack => _backpack;
+        public int MaxBackpackSize => BackpackCapacity;
 
         public bool HasTwoHandedWeapon =>
             (_leftHand?.IsTwoHanded ?? false) || (_rightHand?.IsTwoHanded ?? false);
 
         public PlayerInventory() { }
 
-        //we equip XDDDD
         public bool EquipItem(Items item, int handIndex)
         {
             if (handIndex < 0 || handIndex > 1)
@@ -55,7 +57,6 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        // ta bo mozemy zrzucic bron bez broni (taki zarcik jak cos)
         public Items? UnequipItem(int handIndex)
         {
             if (handIndex < 0 || handIndex > 1)
@@ -81,39 +82,45 @@ namespace RPG_GAME.Model
 
         public bool AddToBackpack(Items item)
         {
+            if (_backpack.Count >= BackpackCapacity)
+                return false;
+
             _backpack.Add(item);
             return true;
         }
 
-        public bool RemoveFromBackpack(Items item)
+        public bool RemoveFromBackpack(int index)
         {
-            return _backpack.Remove(item);
+            if (index < 0 || index >= _backpack.Count)
+                return false;
+
+            _backpack.RemoveAt(index);
+            return true;
         }
 
-        public Items? RemoveFromBackpack(int index)
+        public Items? GetItem(int index)
         {
             if (index < 0 || index >= _backpack.Count)
                 return null;
 
-            var item = _backpack[index];
+            return _backpack[index];
+        }
+
+        public int Count()
+        {
+            return _backpack.Count;
+        }
+
+        public Items? TakeFromBackpack(int index)
+        {
+            var item = GetItem(index);
+            if (item == null)
+                return null;
+
             _backpack.RemoveAt(index);
             return item;
         }
 
-        public bool EquipFromBackpack(int backpackIndex, int handIndex)
-        {
-            if (backpackIndex < 0 || backpackIndex >= _backpack.Count)
-                return false;
-
-            var item = _backpack[backpackIndex];
-            if (!EquipItem(item, handIndex))
-                return false;
-
-            _backpack.RemoveAt(backpackIndex);
-            return true;
-        }
-
-        //nad tym bylo troche siedzenia ale wyszlo 
         public IEnumerable<Items> GetAllWeapons()
         {
             if (_leftHand != null) yield return _leftHand;

@@ -25,6 +25,7 @@ namespace RPG_GAME.App
 
         protected abstract bool Process(InputCommand cmd, World world, Game game);
     }
+
     public class MoveUpHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -35,6 +36,7 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
     public class MoveDownHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -45,6 +47,7 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
     public class MoveLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -55,6 +58,7 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
     public class MoveRightHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -65,6 +69,7 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
     public class PickupHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -75,6 +80,18 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
+    public class BackpackActionHandler : CommandHandler
+    {
+        protected override bool Process(InputCommand cmd, World world, Game game)
+        {
+            if (cmd != InputCommand.BackpackAction) return false;
+
+            world.TryBackpackAction();
+            return true;
+        }
+    }
+
     public class SwapWeaponsHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -85,6 +102,7 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
     public class DropLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -106,12 +124,24 @@ namespace RPG_GAME.App
             return true;
         }
     }
+
     public class QuitHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Quit) return false;
             game.Stop();
+            return true;
+        }
+    }
+
+    public class UnknownCommandHandler : CommandHandler
+    {
+        protected override bool Process(InputCommand cmd, World world, Game game)
+        {
+            if (cmd != InputCommand.Unknown) return false;
+
+            world.AddMessage("Unknown command");
             return true;
         }
     }

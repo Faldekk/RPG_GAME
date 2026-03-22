@@ -1,4 +1,5 @@
 ﻿using System;
+using RPG_GAME.App;
 using RPG_GAME.Model;
 
 namespace RPG_GAME.UI
@@ -16,15 +17,23 @@ namespace RPG_GAME.UI
             _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
 
-        public void Render(World world)
+        public void Render(World world, GameMode mode, int selectedInventoryIndex)
         {
             _buffer.Clear();
 
-            RenderMap(world);
-            RenderPlayer(world.Player);
-            RenderBottomControls();
-            RenderUI(world.Player, world);
+            if (mode == GameMode.Inventory)
+            {
+                RenderInventory(world, selectedInventoryIndex);
+            }
+            else
+            {
+                RenderMap(world);
+                RenderPlayer(world.Player);
+                RenderBottomControls();
+                RenderUI(world.Player, world);
+            }
 
+            RenderCurrentMessage(world);
             _buffer.Flush();
         }
 
@@ -54,8 +63,9 @@ namespace RPG_GAME.UI
         private void RenderBottomControls()
         {
             int row = World.Height + 1;
-            _buffer.PutString(row++, 0, "[WASD] move  [E] pick up  [G] backpack");
-            _buffer.PutString(row++, 0, "[X] swap  [1] drop left  [2] drop right  [Q] quit");
+            _buffer.PutString(row++, 0, "[WASD] move  [E] pick up ");
+            _buffer.PutString(row++, 0, "[X] swap  [1] drop left  [2] drop right");
+            _buffer.PutString(row++, 0, "[B] inventory [Q] quit");
         }
 
         private void RenderUI(Player player, World world)
@@ -72,8 +82,36 @@ namespace RPG_GAME.UI
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
             currentRow = RenderEquipment(player, panelX, currentRow);
-            currentRow = RenderMessageLog(panelX, currentRow, world);
-           // RenderQuitOption(panelX, currentRow);
+            //RenderMessageLog(panelX, currentRow, world);
+        }
+
+        private void RenderInventory(World world, int selectedInventoryIndex)
+        {
+            int row = 1;
+            _buffer.PutString(row++, 2, "=== BACKPACK ===");
+            row++;
+
+            int count = world.Player.Inventory.Count();
+            if (count == 0)
+            {
+                _buffer.PutString(row++, 2, "(empty)");
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    var item = world.Player.Inventory.GetItem(i);
+                    if (item == null)
+                        continue;
+
+                    string marker = i == selectedInventoryIndex ? ">" : " ";
+                    _buffer.PutString(row++, 2, $"{marker} {i + 1}. {item.Name} ({item.Type})");
+                }
+            }
+
+            row += 2;
+            _buffer.PutString(row++, 2, "[W] Up  [S] Down");
+            _buffer.PutString(row++, 2, "[E] Equip  [D] Drop  [U] Use  [ESC] Close");
         }
 
         private int RenderHeader(int panelX, int startRow)
@@ -153,32 +191,36 @@ namespace RPG_GAME.UI
                 _buffer.PutString(startRow++, panelX, rightText);
             }
 
-            _buffer.PutString(startRow++, panelX, $"Backpack: {player.Inventory.Backpack.Count}");
+            _buffer.PutString(startRow++, panelX, $"Backpack: {player.Inventory.Count()}/{player.Inventory.MaxBackpackSize}");
             return startRow + 1;
         }
 
-        private int RenderMessageLog(int panelX, int startRow, World world)
-        {
-            _buffer.PutString(startRow++, panelX, "=== MESSAGE LOG ===");
-
-            if (world.MessageLog.Count == 0)
-            {
-                _buffer.PutString(startRow++, panelX, "(no messages)");
-                return startRow + 1;
-            }
-
-            foreach (var message in world.MessageLog)
-            {
-                _buffer.PutString(startRow++, panelX, $"- {message}");
-            }
-
-            return startRow + 1;
-        }
-
-        //private void RenderQuitOption(int panelX, int startRow)
+        //private int RenderMessageLog(int panelX, int startRow, World world)
         //{
-        //    _buffer.PutString(startRow, panelX, "Q - quit game");
+        //    _buffer.PutString(startRow++, panelX, "=== MESSAGE LOG ===");
+
+        //    if (world.MessageLog.Count == 0)
+        //    {
+        //        _buffer.PutString(startRow++, panelX, "(no messages)");
+        //        return startRow + 1;
+        //    }
+
+        //    foreach (var message in world.MessageLog)
+        //    {
+        //        _buffer.PutString(startRow++, panelX, $"- {message}");
+        //    }
+
+        //    return startRow + 1;
         //}
+
+        private void RenderCurrentMessage(World world)
+        {
+            if (string.IsNullOrWhiteSpace(world.CurrentMessage))
+                return;
+
+            int row = 34;
+            _buffer.PutString(row, 0, $"Message: {world.CurrentMessage}");
+        }
     }
 
     public class RenderConfig

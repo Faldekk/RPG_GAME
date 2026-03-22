@@ -14,6 +14,7 @@ namespace RPG_GAME.Model
 
         public Player Player { get; }
         public IReadOnlyList<string> MessageLog => _messageLog;
+        public string CurrentMessage { get; private set; } = string.Empty;
 
         public World()
             : this(new DungeonGroundsStrategy())
@@ -37,6 +38,7 @@ namespace RPG_GAME.Model
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
+            CurrentMessage = message;
             _messageLog.Add(message);
 
             const int maxMessages = 6;
@@ -167,87 +169,216 @@ namespace RPG_GAME.Model
 
             if (!IsWeapon(item))
             {
-                Player.Inventory.AddToBackpack(item);
+                if (!Player.Inventory.AddToBackpack(item))
+                {
+                    AddMessage("Backpack full.");
+                    return false;
+                }
+
                 tile.Item = null;
                 AddMessage($"Picked up {item.Name}.");
                 return true;
             }
 
-            if (item.IsTwoHanded && (Player.Inventory.LeftHand != null || Player.Inventory.RightHand != null))
+            if (TryEquipWeapon(item))
             {
-                AddMessage("Cannot equip 2H weapon while holding another weapon.");
+                ApplyWeaponBonuses(item);
+                tile.Item = null;
+                AddMessage($"Equipped {item.Name}.");
+                return true;
+            }
+
+            if (!Player.Inventory.AddToBackpack(item))
+            {
+                AddMessage("Backpack full.");
                 return false;
             }
 
-            int handIndex = GetPreferredHand(item);
-
-            var displaced = Player.Inventory.UnequipItem(handIndex);
-            if (displaced != null && IsWeapon(displaced))
-                RemoveWeaponBonuses(displaced);
-
-            if (!Player.Inventory.EquipItem(item, handIndex))
-            {
-                if (displaced != null)
-                {
-                    Player.Inventory.EquipItem(displaced, handIndex);
-                    if (IsWeapon(displaced))
-                        ApplyWeaponBonuses(displaced);
-                }
-
-                AddMessage("Cannot equip item.");
-                return false;
-            }
-
-            ApplyWeaponBonuses(item);
-
-            tile.Item = displaced;
-            if (displaced != null)
-                displaced.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
-
-            AddMessage(displaced == null
-                ? $"Equipped {item.Name}."
-                : $"Equipped {item.Name} and dropped {displaced.Name}.");
-
+            tile.Item = null;
+            AddMessage($"Stored {item.Name} in backpack.");
             return true;
+        }
+
+        private bool TryEquipWeapon(Items item)
+        {
+            bool leftOccupied = Player.Inventory.LeftHand != null;
+            bool rightOccupied = Player.Inventory.RightHand != null;
+            bool bothHandsFull = leftOccupied && rightOccupied;
+
+            if (item.IsTwoHanded)
+            {
+                if (leftOccupied || rightOccupied)
+                    return false;
+
+                Player.Inventory.EquipItem(item, 0);
+                return true;
+            }
+
+            if (bothHandsFull)
+                return false;
+
+            int handIndex = leftOccupied ? 1 : 0;
+            return Player.Inventory.EquipItem(item, handIndex);
         }
 
         public bool TryBackpackAction()
         {
-            if (Player.Inventory.Backpack.Count == 0)
+            int count = Player.Inventory.Count();
+            if (count == 0)
             {
                 AddMessage("Backpack is empty.");
                 return false;
             }
 
-            int lastIndex = Player.Inventory.Backpack.Count - 1;
-            var lastItem = Player.Inventory.Backpack[lastIndex];
+            return DropFromBackpack(count - 1);
+        }
 
-            if (IsWeapon(lastItem) && TryEquipWeapon(lastItem))
+        public bool EquipFromBackpack(int index)
+        {
+            var selected = Player.Inventory.GetItem(index);
+            if (selected == null)
             {
-                Player.Inventory.RemoveFromBackpack(lastIndex);
-                ApplyWeaponBonuses(lastItem);
-                AddMessage($"Equipped {lastItem.Name} from backpack.");
+                AddMessage("No item selected.");
+                return false;
+            }
+
+            if (!IsWeapon(selected))
+            {
+                AddMessage("Selected item cannot be equipped.");
+                return false;
+            }
+
+            var backpackItem = Player.Inventory.TakeFromBackpack(index);
+            if (backpackItem == null)
+            {
+                AddMessage("Cannot equip selected item.");
+                return false;
+            }
+
+            if (backpackItem.IsTwoHanded)
+            {
+                var left = Player.Inventory.UnequipItem(0);
+                var right = Player.Inventory.UnequipItem(1);
+
+                if (left != null && !Player.Inventory.AddToBackpack(left))
+                {
+                    Player.Inventory.EquipItem(left, 0);
+                    if (right != null) Player.Inventory.EquipItem(right, 1);
+                    Player.Inventory.AddToBackpack(backpackItem);
+                    AddMessage("Backpack full.");
+                    return false;
+                }
+
+                if (right != null && !Player.Inventory.AddToBackpack(right))
+                {
+                    if (left != null) Player.Inventory.TakeFromBackpack(Player.Inventory.Count() - 1);
+                    if (left != null) Player.Inventory.EquipItem(left, 0);
+                    Player.Inventory.EquipItem(right, 1);
+                    Player.Inventory.AddToBackpack(backpackItem);
+                    AddMessage("Backpack full.");
+                    return false;
+                }
+
+                if (left != null && IsWeapon(left)) RemoveWeaponBonuses(left);
+                if (right != null && IsWeapon(right)) RemoveWeaponBonuses(right);
+
+                Player.Inventory.EquipItem(backpackItem, 0);
+                ApplyWeaponBonuses(backpackItem);
+                AddMessage($"Equipped {backpackItem.Name}.");
                 return true;
             }
 
+            int handIndex = Player.Inventory.LeftHand == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0;
+            var displaced = Player.Inventory.UnequipItem(handIndex);
+
+            if (displaced != null)
+            {
+                if (!Player.Inventory.AddToBackpack(displaced))
+                {
+                    Player.Inventory.EquipItem(displaced, handIndex);
+                    Player.Inventory.AddToBackpack(backpackItem);
+                    AddMessage("Backpack full.");
+                    return false;
+                }
+
+                if (IsWeapon(displaced))
+                    RemoveWeaponBonuses(displaced);
+            }
+
+            if (!Player.Inventory.EquipItem(backpackItem, handIndex))
+            {
+                if (displaced != null)
+                    Player.Inventory.TakeFromBackpack(Player.Inventory.Count() - 1);
+                if (displaced != null)
+                    Player.Inventory.EquipItem(displaced, handIndex);
+                Player.Inventory.AddToBackpack(backpackItem);
+                AddMessage("Cannot equip selected item.");
+                return false;
+            }
+
+            ApplyWeaponBonuses(backpackItem);
+            AddMessage($"Equipped {backpackItem.Name}.");
+            return true;
+        }
+
+        public bool DropFromBackpack(int index)
+        {
             var tile = GetTile(Player.Pos.Y, Player.Pos.X);
             if (tile.Item != null)
             {
-                AddMessage("Cannot drop backpack item: tile already has an item.");
+                AddMessage("Cannot drop: tile already has an item.");
                 return false;
             }
 
-            var removed = Player.Inventory.RemoveFromBackpack(lastIndex);
-            if (removed == null)
+            var item = Player.Inventory.TakeFromBackpack(index);
+            if (item == null)
             {
-                AddMessage("Backpack action failed.");
+                AddMessage("No item selected.");
                 return false;
             }
 
-            removed.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
-            tile.Item = removed;
-            AddMessage($"Dropped {removed.Name} from backpack.");
+            item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+            tile.Item = item;
+            AddMessage($"Dropped {item.Name}.");
             return true;
+        }
+
+        public bool UseFromBackpack(int index)
+        {
+            var item = Player.Inventory.GetItem(index);
+            if (item == null)
+            {
+                AddMessage("No item selected.");
+                return false;
+            }
+
+            if (item.IsHeal)
+            {
+                Player.Heal(item.Value);
+                Player.Inventory.RemoveFromBackpack(index);
+                AddMessage($"Used {item.Name}.");
+                return true;
+            }
+
+            if (item.Type.Equals("Currency", StringComparison.OrdinalIgnoreCase))
+            {
+                if (item.Name.Equals("Coins", StringComparison.OrdinalIgnoreCase))
+                    Player.Stats.ModifyCurrency("Coins", item.Value);
+                else if (item.Name.Equals("Gold", StringComparison.OrdinalIgnoreCase))
+                    Player.Stats.ModifyCurrency("Gold", item.Value);
+                else
+                {
+                    AddMessage("Item cannot be used.");
+                    return false;
+                }
+
+                Player.Inventory.RemoveFromBackpack(index);
+                AddMessage($"Used {item.Name}.");
+                return true;
+            }
+
+            AddMessage("Item cannot be used.");
+            return false;
         }
 
         public bool TryDropItem(int handIndex)
@@ -273,39 +404,6 @@ namespace RPG_GAME.Model
             tile.Item = item;
             AddMessage($"Dropped {item.Name}.");
             return true;
-        }
-
-        private int GetPreferredHand(Items item)
-        {
-            if (item.IsTwoHanded)
-                return 0;
-
-            if (Player.Inventory.LeftHand == null)
-                return 0;
-
-            if (Player.Inventory.RightHand == null)
-                return 1;
-
-            return 0;
-        }
-
-        private bool TryEquipWeapon(Items item)
-        {
-            if (item.IsTwoHanded)
-            {
-                if (Player.Inventory.LeftHand != null || Player.Inventory.RightHand != null)
-                    return false;
-
-                return Player.Inventory.EquipItem(item, 0);
-            }
-
-            if (Player.Inventory.LeftHand == null)
-                return Player.Inventory.EquipItem(item, 0);
-
-            if (Player.Inventory.RightHand == null)
-                return Player.Inventory.EquipItem(item, 1);
-
-            return false;
         }
 
         private void ApplyWeaponBonuses(Items weapon)
