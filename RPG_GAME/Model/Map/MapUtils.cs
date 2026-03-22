@@ -30,5 +30,19 @@ namespace RPG_GAME.Model.Map
                 tiles[y, x].IsWall = false;
             }
         }
+
+        public static void CarveCorridor(Tile[,] tiles, int fromX, int fromY, int toX, int toY)
+        {
+            if (Random.Shared.Next(2) == 0)
+            {
+                CarveHorizontalTunnel(tiles, fromX, toX, fromY);
+                CarveVerticalTunnel(tiles, fromY, toY, toX);
+            }
+            else
+            {
+                CarveVerticalTunnel(tiles, fromY, toY, fromX);
+                CarveHorizontalTunnel(tiles, fromX, toX, toY);
+            }
+        }
     }
 }

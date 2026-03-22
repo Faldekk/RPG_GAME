@@ -8,6 +8,7 @@ namespace RPG_GAME.UI
         private readonly int _rows;
         private readonly int _cols;
         private readonly char[,] _buffer;
+
         public ConsoleBuffer(int rows, int cols)
         {
             _rows = rows;
@@ -38,6 +39,7 @@ namespace RPG_GAME.UI
                 PutChar(row, col + i, text[i]);
             }
         }
+
         public void Flush()
         {
             var sb = new StringBuilder(_rows * (_cols + 1));
@@ -51,7 +53,15 @@ namespace RPG_GAME.UI
                     sb.Append('\n');
             }
 
-            Console.SetCursorPosition(0, 0);
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                    Console.SetCursorPosition(0, 0);
+            }
+            catch
+            {
+            }
+
             Console.Write(sb.ToString());
         }
     }

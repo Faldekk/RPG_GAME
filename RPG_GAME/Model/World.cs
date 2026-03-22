@@ -1,6 +1,4 @@
-﻿using RPG_GAME.Model.Instructions;
-using RPG_GAME.Model.Map.Build;
-using RPG_GAME.Model.Map.Build.Strategies;
+﻿using RPG_GAME.Model.DungeonBuilding;
 
 namespace RPG_GAME.Model
 {
@@ -12,37 +10,61 @@ namespace RPG_GAME.Model
         private readonly Tile[,] _tiles;
 
         public Player Player { get; }
-        public InstructionCatalog Instructions { get; }
 
         public World()
             : this(new DungeonGroundsStrategy())
         {
         }
 
-        public World(IDungeonBuildStrategy strategy)
+        public World(IDungeonStrategy strategy)
         {
+            _tiles = new Tile[Height, Width];
             Player = new Player(new Vec2(1, 1));
 
-            var builder = strategy.CreateBuilder();
-            var context = builder.Build(Width, Height);
-
-            _tiles = context.Tiles;
-            Instructions = builder.BuildInstructions();
-
+            var context = strategy.Build(_tiles, Width, Height);
             SpawnPlayer(context);
+            SpawnRandomWeapons(10);
         }
 
-        private void SpawnPlayer(DungeonBuildContext context)
+        private void SpawnPlayer(BuildContext context)
         {
+            if (context.CentralRoom.HasValue)
+            {
+                var centralRoom = context.CentralRoom.Value;
+                Player.MoveTo(new Vec2(centralRoom.CenterX, centralRoom.CenterY));
+                return;
+            }
+
             if (context.Rooms.Count > 0)
             {
-                var start = context.Rooms[0];
-                Player.MoveTo(new Vec2(start.CenterX, start.CenterY));
+                var startRoom = context.Rooms[0];
+                Player.MoveTo(new Vec2(startRoom.CenterX, startRoom.CenterY));
                 return;
             }
 
             _tiles[1, 1].IsWall = false;
             Player.MoveTo(new Vec2(1, 1));
+        }
+
+        private void SpawnRandomWeapons(int count)
+        {
+            int spawned = 0;
+            int attempts = 0;
+            int maxAttempts = count * 20;
+
+            while (spawned < count && attempts < maxAttempts)
+            {
+                int randomY = Random.Shared.Next(1, Height - 1);
+                int randomX = Random.Shared.Next(1, Width - 1);
+
+                if (!_tiles[randomY, randomX].IsWall && !_tiles[randomY, randomX].HasItem)
+                {
+                    _tiles[randomY, randomX].Item = WeaponGenerator.GenerateRandomWeapon(randomX, randomY);
+                    spawned++;
+                }
+
+                attempts++;
+            }
         }
 
         public Tile GetTile(int y, int x) => _tiles[y, x];
