@@ -1,4 +1,5 @@
-﻿using RPG_GAME.Model.DungeonBuilding;
+﻿using System.Collections.Generic;
+using RPG_GAME.Model.DungeonBuilding;
 
 namespace RPG_GAME.Model
 {
@@ -48,22 +49,26 @@ namespace RPG_GAME.Model
 
         private void SpawnRandomWeapons(int count)
         {
-            int spawned = 0;
-            int attempts = 0;
-            int maxAttempts = count * 20;
+            var availableTiles = new List<(int y, int x)>();
 
-            while (spawned < count && attempts < maxAttempts)
+            for (int y = 1; y < Height - 1; y++)
             {
-                int randomY = Random.Shared.Next(1, Height - 1);
-                int randomX = Random.Shared.Next(1, Width - 1);
-
-                if (!_tiles[randomY, randomX].IsWall && !_tiles[randomY, randomX].HasItem)
+                for (int x = 1; x < Width - 1; x++)
                 {
-                    _tiles[randomY, randomX].Item = WeaponGenerator.GenerateRandomWeapon(randomX, randomY);
-                    spawned++;
+                    if (!_tiles[y, x].IsWall && !_tiles[y, x].HasItem)
+                        availableTiles.Add((y, x));
                 }
+            }
 
-                attempts++;
+            int toSpawn = System.Math.Min(count, availableTiles.Count);
+
+            for (int i = 0; i < toSpawn; i++)
+            {
+                int pickIndex = Random.Shared.Next(availableTiles.Count);
+                var (y, x) = availableTiles[pickIndex];
+                availableTiles.RemoveAt(pickIndex);
+
+                _tiles[y, x].Item = WeaponGenerator.GenerateRandomWeapon(x, y);
             }
         }
 
