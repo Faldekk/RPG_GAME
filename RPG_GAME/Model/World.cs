@@ -165,25 +165,49 @@ namespace RPG_GAME.Model
                 return true;
             }
 
-            if (IsWeapon(item))
+            if (!IsWeapon(item))
             {
-                if (TryEquipWeapon(item))
-                {
-                    tile.Item = null;
-                    ApplyWeaponBonuses(item);
-                    AddMessage($"Equipped {item.Name}.");
-                    return true;
-                }
-
                 Player.Inventory.AddToBackpack(item);
                 tile.Item = null;
-                AddMessage($"Stored {item.Name} in backpack.");
+                AddMessage($"Picked up {item.Name}.");
                 return true;
             }
 
-            Player.Inventory.AddToBackpack(item);
-            tile.Item = null;
-            AddMessage($"Picked up {item.Name}.");
+            if (item.IsTwoHanded && (Player.Inventory.LeftHand != null || Player.Inventory.RightHand != null))
+            {
+                AddMessage("Cannot equip 2H weapon while holding another weapon.");
+                return false;
+            }
+
+            int handIndex = GetPreferredHand(item);
+
+            var displaced = Player.Inventory.UnequipItem(handIndex);
+            if (displaced != null && IsWeapon(displaced))
+                RemoveWeaponBonuses(displaced);
+
+            if (!Player.Inventory.EquipItem(item, handIndex))
+            {
+                if (displaced != null)
+                {
+                    Player.Inventory.EquipItem(displaced, handIndex);
+                    if (IsWeapon(displaced))
+                        ApplyWeaponBonuses(displaced);
+                }
+
+                AddMessage("Cannot equip item.");
+                return false;
+            }
+
+            ApplyWeaponBonuses(item);
+
+            tile.Item = displaced;
+            if (displaced != null)
+                displaced.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+
+            AddMessage(displaced == null
+                ? $"Equipped {item.Name}."
+                : $"Equipped {item.Name} and dropped {displaced.Name}.");
+
             return true;
         }
 
@@ -249,6 +273,20 @@ namespace RPG_GAME.Model
             tile.Item = item;
             AddMessage($"Dropped {item.Name}.");
             return true;
+        }
+
+        private int GetPreferredHand(Items item)
+        {
+            if (item.IsTwoHanded)
+                return 0;
+
+            if (Player.Inventory.LeftHand == null)
+                return 0;
+
+            if (Player.Inventory.RightHand == null)
+                return 1;
+
+            return 0;
         }
 
         private bool TryEquipWeapon(Items item)
