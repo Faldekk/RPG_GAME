@@ -101,7 +101,7 @@ namespace RPG_GAME.App
                 return;
             }
 
-            // Użyj tego (napój zdrowia, combo itp) s
+            // Użyj tego (napój zdrowia, combo itp) 
             if (command == InputCommand.InventoryUse)
             {
                 if (_world.UseFromBackpack(SelectedInventoryIndex))

@@ -20,7 +20,6 @@
         public int CenterX => X + Width / 2;
         public int CenterY => Y + Height / 2;
 
-        // Sprawdzaj czy dwa pokoje się przenikają - wypadałoby nie
         public bool Intersects(RectRoom other)
         {
             return X <= other.X + other.Width &&
