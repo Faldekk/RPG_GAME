@@ -61,7 +61,7 @@ namespace RPG_GAME.Model.DungeonBuilding
                 if (overlaps)
                     continue;
 
-                // Ok, wyrywaj! Dodaj do listy
+               
                 MapUtils.CarveRoom(tiles, candidateRoom);
                 context.Rooms.Add(candidateRoom);
                 created++;
