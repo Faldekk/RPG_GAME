@@ -23,7 +23,7 @@ namespace RPG_GAME.App
         protected abstract bool Process(InputCommand cmd, World world, Game game);
     }
 
-    // Rozjebane - gracz leci w górę
+   
     public class MoveUpHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -34,7 +34,7 @@ namespace RPG_GAME.App
         }
     }
 
-    // Rozjebane - gracz leci w dół
+    
     public class MoveDownHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -45,7 +45,7 @@ namespace RPG_GAME.App
         }
     }
 
-    // Rozjebane - gracz leci w lewo
+    
     public class MoveLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -56,7 +56,7 @@ namespace RPG_GAME.App
         }
     }
 
-    // Rozjebane - gracz leci w prawo
+ 
     public class MoveRightHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -67,7 +67,6 @@ namespace RPG_GAME.App
         }
     }
 
-    // E - podnieś co jest pod dupą
     public class PickupHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
