@@ -28,8 +28,7 @@ namespace RPG_GAME.Model.DungeonBuilding
         {
             _instructions.Add(new BuildInstruction(key, description));
         }
-
-        // Dodaj instrukcję dla gracza z bezpośrednim użyciem BuildInstruction (preferowane)
+        
         public void AddInstruction(BuildInstruction instruction)
         {
             _instructions.Add(instruction);
