@@ -10,17 +10,20 @@ namespace RPG_GAME.Model
         public const int Width = 40;
 
         private readonly Tile[,] _tiles;
-        private readonly List<string> _messageLog = new();
+        private readonly List<string> _messageLog = new();  
+        private readonly List<BuildInstruction> _availableInstructions = new();  
 
         public Player Player { get; }
         public IReadOnlyList<string> MessageLog => _messageLog;
-        public string CurrentMessage { get; private set; } = string.Empty;
+        public IReadOnlyList<BuildInstruction> AvailableInstructions => _availableInstructions;
+        public string CurrentMessage { get; private set; } = string.Empty; 
 
         public World()
             : this(new DungeonGroundsStrategy())
         {
         }
 
+        // Zbuduj świat - najpierw mapa, potem gracz, potem monety i instrukcje
         public World(IDungeonStrategy strategy)
         {
             _tiles = new Tile[Height, Width];
@@ -28,11 +31,11 @@ namespace RPG_GAME.Model
 
             var context = strategy.Build(_tiles, Width, Height);
             SpawnPlayer(context);
-            SpawnRandomWeapons(10);
-            SpawnRandomItems(8);
-            SpawnCurrencyItems(2, 2);
+            SpawnCurrencyItems(2, 2);  // Dla smaku
+            BuildInstructionList(context);
         }
 
+        // Dodaj wiadomość do dziennika - ostatnia wiadomość się wyświetla
         public void AddMessage(string message)
         {
             if (string.IsNullOrWhiteSpace(message))
@@ -42,10 +45,31 @@ namespace RPG_GAME.Model
             _messageLog.Add(message);
 
             const int maxMessages = 6;
+            // Nie trzymaj zbyt dużo - to zajmuje pamięć
             if (_messageLog.Count > maxMessages)
                 _messageLog.RemoveAt(0);
         }
 
+        // Zbierz instrukcje z budowania i dodaj UI-owe
+        private void BuildInstructionList(BuildContext context)
+        {
+            _availableInstructions.Clear();
+            foreach (var instruction in context.Instructions)
+                _availableInstructions.Add(instruction);
+
+            AddUniqueInstruction(ControlsConfig.OpenInventory);
+            AddUniqueInstruction(ControlsConfig.CloseInventory);
+        }
+        private void AddUniqueInstruction(BuildInstruction instruction)
+        {
+            foreach (var existing in _availableInstructions)
+            {
+                if (existing.Key == instruction.Key && existing.Description == instruction.Description)
+                    return;
+            }
+
+            _availableInstructions.Add(instruction);
+        } 
         private void SpawnPlayer(BuildContext context)
         {
             if (context.CentralRoom.HasValue)
@@ -80,36 +104,6 @@ namespace RPG_GAME.Model
             }
 
             return availableTiles;
-        }
-
-        private void SpawnRandomWeapons(int count)
-        {
-            var availableTiles = GetAvailableFloorTiles();
-            int toSpawn = Math.Min(count, availableTiles.Count);
-
-            for (int i = 0; i < toSpawn; i++)
-            {
-                int pickIndex = Random.Shared.Next(availableTiles.Count);
-                var (y, x) = availableTiles[pickIndex];
-                availableTiles.RemoveAt(pickIndex);
-
-                _tiles[y, x].Item = WeaponGenerator.GenerateRandomWeapon(x, y);
-            }
-        }
-
-        public void SpawnRandomItems(int count)
-        {
-            var availableTiles = GetAvailableFloorTiles();
-            int toSpawn = Math.Min(count, availableTiles.Count);
-
-            for (int i = 0; i < toSpawn; i++)
-            {
-                int pickIndex = Random.Shared.Next(availableTiles.Count);
-                var (y, x) = availableTiles[pickIndex];
-                availableTiles.RemoveAt(pickIndex);
-
-                _tiles[y, x].Item = ItemGenerator.GenerateRandomNonWeapon(new Vec2(x, y));
-            }
         }
 
         private void SpawnCurrencyItems(int coinCount, int goldCount)
@@ -160,25 +154,15 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            if (TryCollectCurrency(item))
+            if (item.TryCollect(Player, out var collectMessage))
             {
                 tile.Item = null;
-                AddMessage($"Collected {item.Value} {item.Name}.");
+                AddMessage(collectMessage);
                 return true;
             }
 
-            if (!IsWeapon(item))
-            {
-                if (!Player.Inventory.AddToBackpack(item))
-                {
-                    AddMessage("Backpack full.");
-                    return false;
-                }
-
-                tile.Item = null;
-                AddMessage($"Picked up {item.Name}.");
-                return true;
-            }
+            if (!item.CanEquip)
+                return TryStoreFromTile(tile, item, $"Picked up {item.Name}.");
 
             if (TryEquipWeapon(item))
             {
@@ -188,6 +172,11 @@ namespace RPG_GAME.Model
                 return true;
             }
 
+            return TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
+        }
+
+        private bool TryStoreFromTile(Tile tile, Items item, string successMessage)
+        {
             if (!Player.Inventory.AddToBackpack(item))
             {
                 AddMessage("Backpack full.");
@@ -195,30 +184,33 @@ namespace RPG_GAME.Model
             }
 
             tile.Item = null;
-            AddMessage($"Stored {item.Name} in backpack.");
+            AddMessage(successMessage);
             return true;
         }
 
         private bool TryEquipWeapon(Items item)
         {
-            bool leftOccupied = Player.Inventory.LeftHand != null;
-            bool rightOccupied = Player.Inventory.RightHand != null;
-            bool bothHandsFull = leftOccupied && rightOccupied;
+            if (!item.CanEquip)
+                return false;
 
             if (item.IsTwoHanded)
             {
-                if (leftOccupied || rightOccupied)
+                if (Player.Inventory.LeftHand != null || Player.Inventory.RightHand != null)
                     return false;
 
-                Player.Inventory.EquipItem(item, 0);
-                return true;
+                return Player.Inventory.EquipItem(item, 0);
             }
 
-            if (bothHandsFull)
+            if (Player.Inventory.HasTwoHandedWeapon)
                 return false;
 
-            int handIndex = leftOccupied ? 1 : 0;
-            return Player.Inventory.EquipItem(item, handIndex);
+            if (Player.Inventory.LeftHand == null)
+                return Player.Inventory.EquipItem(item, 0);
+
+            if (Player.Inventory.RightHand == null)
+                return Player.Inventory.EquipItem(item, 1);
+
+            return false;
         }
 
         public bool TryBackpackAction()
@@ -242,9 +234,26 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            if (!IsWeapon(selected))
+            if (!selected.CanEquip)
             {
                 AddMessage("Selected item cannot be equipped.");
+                return false;
+            }
+
+            return selected.IsTwoHanded
+                ? EquipTwoHandedFromBackpack(index)
+                : EquipOneHandedFromBackpack(index);
+        }
+
+        private bool EquipTwoHandedFromBackpack(int index)
+        {
+            var left = Player.Inventory.LeftHand;
+            var right = Player.Inventory.RightHand;
+
+            int requiredSlots = (left != null ? 1 : 0) + (right != null ? 1 : 0);
+            if (Player.Inventory.Count() - 1 + requiredSlots > Player.Inventory.MaxBackpackSize)
+            {
+                AddMessage("Backpack full.");
                 return false;
             }
 
@@ -255,62 +264,60 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            if (backpackItem.IsTwoHanded)
+            var unequippedLeft = Player.Inventory.UnequipItem(0);
+            var unequippedRight = Player.Inventory.UnequipItem(1);
+
+            if (unequippedLeft != null)
+                RemoveWeaponBonuses(unequippedLeft);
+            if (unequippedRight != null)
+                RemoveWeaponBonuses(unequippedRight);
+
+            if (unequippedLeft != null)
+                Player.Inventory.AddToBackpack(unequippedLeft);
+            if (unequippedRight != null)
+                Player.Inventory.AddToBackpack(unequippedRight);
+
+            Player.Inventory.EquipItem(backpackItem, 0);
+            ApplyWeaponBonuses(backpackItem);
+            AddMessage($"Equipped {backpackItem.Name}.");
+            return true;
+        }
+
+        private bool EquipOneHandedFromBackpack(int index)
+        {
+            var backpackItem = Player.Inventory.TakeFromBackpack(index);
+            if (backpackItem == null)
             {
-                var left = Player.Inventory.UnequipItem(0);
-                var right = Player.Inventory.UnequipItem(1);
-
-                if (left != null && !Player.Inventory.AddToBackpack(left))
-                {
-                    Player.Inventory.EquipItem(left, 0);
-                    if (right != null) Player.Inventory.EquipItem(right, 1);
-                    Player.Inventory.AddToBackpack(backpackItem);
-                    AddMessage("Backpack full.");
-                    return false;
-                }
-
-                if (right != null && !Player.Inventory.AddToBackpack(right))
-                {
-                    if (left != null) Player.Inventory.TakeFromBackpack(Player.Inventory.Count() - 1);
-                    if (left != null) Player.Inventory.EquipItem(left, 0);
-                    Player.Inventory.EquipItem(right, 1);
-                    Player.Inventory.AddToBackpack(backpackItem);
-                    AddMessage("Backpack full.");
-                    return false;
-                }
-
-                if (left != null && IsWeapon(left)) RemoveWeaponBonuses(left);
-                if (right != null && IsWeapon(right)) RemoveWeaponBonuses(right);
-
-                Player.Inventory.EquipItem(backpackItem, 0);
-                ApplyWeaponBonuses(backpackItem);
-                AddMessage($"Equipped {backpackItem.Name}.");
-                return true;
+                AddMessage("Cannot equip selected item.");
+                return false;
             }
 
-            int handIndex = Player.Inventory.LeftHand == null ? 0 : Player.Inventory.RightHand == null ? 1 : 0;
+            int handIndex = GetOneHandEquipSlot();
             var displaced = Player.Inventory.UnequipItem(handIndex);
 
             if (displaced != null)
             {
+                RemoveWeaponBonuses(displaced);
+
                 if (!Player.Inventory.AddToBackpack(displaced))
                 {
+                    ApplyWeaponBonuses(displaced);
                     Player.Inventory.EquipItem(displaced, handIndex);
                     Player.Inventory.AddToBackpack(backpackItem);
                     AddMessage("Backpack full.");
                     return false;
                 }
-
-                if (IsWeapon(displaced))
-                    RemoveWeaponBonuses(displaced);
             }
 
             if (!Player.Inventory.EquipItem(backpackItem, handIndex))
             {
-                if (displaced != null)
-                    Player.Inventory.TakeFromBackpack(Player.Inventory.Count() - 1);
-                if (displaced != null)
-                    Player.Inventory.EquipItem(displaced, handIndex);
+                var rollback = Player.Inventory.TakeFromBackpack(Player.Inventory.Count() - 1);
+                if (rollback != null)
+                {
+                    ApplyWeaponBonuses(rollback);
+                    Player.Inventory.EquipItem(rollback, handIndex);
+                }
+
                 Player.Inventory.AddToBackpack(backpackItem);
                 AddMessage("Cannot equip selected item.");
                 return false;
@@ -319,6 +326,20 @@ namespace RPG_GAME.Model
             ApplyWeaponBonuses(backpackItem);
             AddMessage($"Equipped {backpackItem.Name}.");
             return true;
+        }
+
+        private int GetOneHandEquipSlot()
+        {
+            if (Player.Inventory.HasTwoHandedWeapon)
+                return 0;
+
+            if (Player.Inventory.LeftHand == null)
+                return 0;
+
+            if (Player.Inventory.RightHand == null)
+                return 1;
+
+            return 0;
         }
 
         public bool DropFromBackpack(int index)
@@ -352,33 +373,15 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            if (item.IsHeal)
+            if (!item.TryUse(Player, out var useMessage))
             {
-                Player.Heal(item.Value);
-                Player.Inventory.RemoveFromBackpack(index);
-                AddMessage($"Used {item.Name}.");
-                return true;
+                AddMessage(useMessage);
+                return false;
             }
 
-            if (item.Type.Equals("Currency", StringComparison.OrdinalIgnoreCase))
-            {
-                if (item.Name.Equals("Coins", StringComparison.OrdinalIgnoreCase))
-                    Player.Stats.ModifyCurrency("Coins", item.Value);
-                else if (item.Name.Equals("Gold", StringComparison.OrdinalIgnoreCase))
-                    Player.Stats.ModifyCurrency("Gold", item.Value);
-                else
-                {
-                    AddMessage("Item cannot be used.");
-                    return false;
-                }
-
-                Player.Inventory.RemoveFromBackpack(index);
-                AddMessage($"Used {item.Name}.");
-                return true;
-            }
-
-            AddMessage("Item cannot be used.");
-            return false;
+            Player.Inventory.RemoveFromBackpack(index);
+            AddMessage(useMessage);
+            return true;
         }
 
         public bool TryDropItem(int handIndex)
@@ -397,8 +400,7 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            if (IsWeapon(item))
-                RemoveWeaponBonuses(item);
+            RemoveWeaponBonuses(item);
 
             item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
             tile.Item = item;
@@ -406,80 +408,14 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        private void ApplyWeaponBonuses(Items weapon)
+        private void ApplyWeaponBonuses(Items item)
         {
-            var (strength, dexterity, aggression, wisdom, luck) = GetWeaponStatBonuses(weapon);
-            Player.Stats.ModifyStat("Strength", strength);
-            Player.Stats.ModifyStat("Dexterity", dexterity);
-            Player.Stats.ModifyStat("Agression", aggression);
-            Player.Stats.ModifyStat("Wisdom", wisdom);
-            Player.Stats.ModifyStat("Luck", luck);
+            item.ApplyEquipBonuses(Player.Stats);
         }
 
-        private void RemoveWeaponBonuses(Items weapon)
+        private void RemoveWeaponBonuses(Items item)
         {
-            var (strength, dexterity, aggression, wisdom, luck) = GetWeaponStatBonuses(weapon);
-            Player.Stats.ModifyStat("Strength", -strength);
-            Player.Stats.ModifyStat("Dexterity", -dexterity);
-            Player.Stats.ModifyStat("Agression", -aggression);
-            Player.Stats.ModifyStat("Wisdom", -wisdom);
-            Player.Stats.ModifyStat("Luck", -luck);
-        }
-
-        private static (int strength, int dexterity, int aggression, int wisdom, int luck) GetWeaponStatBonuses(Items weapon)
-        {
-            int strength = 0;
-            int dexterity = 0;
-            int aggression = 0;
-            int wisdom = 0;
-            int luck = 0;
-
-            if (weapon.Type.Equals("Melee", StringComparison.OrdinalIgnoreCase))
-            {
-                strength += Math.Max(1, weapon.Value / 4);
-                aggression += 1;
-                if (weapon.IsTwoHanded)
-                    strength += 2;
-            }
-
-            if (weapon.Type.Equals("Magic", StringComparison.OrdinalIgnoreCase))
-            {
-                wisdom += Math.Max(1, weapon.Value / 5);
-                luck += 1;
-                if (weapon.IsTwoHanded)
-                    wisdom += 2;
-            }
-
-            if (!weapon.IsTwoHanded)
-                dexterity += 1;
-
-            return (strength, dexterity, aggression, wisdom, luck);
-        }
-
-        private bool TryCollectCurrency(Items item)
-        {
-            if (!item.Type.Equals("Currency", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            if (item.Name.Equals("Coins", StringComparison.OrdinalIgnoreCase))
-            {
-                Player.Stats.ModifyCurrency("Coins", item.Value);
-                return true;
-            }
-
-            if (item.Name.Equals("Gold", StringComparison.OrdinalIgnoreCase))
-            {
-                Player.Stats.ModifyCurrency("Gold", item.Value);
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool IsWeapon(Items item)
-        {
-            return item.Type.Equals("Melee", StringComparison.OrdinalIgnoreCase) ||
-                   item.Type.Equals("Magic", StringComparison.OrdinalIgnoreCase);
+            item.RemoveEquipBonuses(Player.Stats);
         }
     }
 }

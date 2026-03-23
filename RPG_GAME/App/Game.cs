@@ -23,6 +23,7 @@ namespace RPG_GAME.App
             _commandPipeline = BuildCommandPipeline();
         }
 
+        // Główna pętla gry - render -> czytaj input -> rób coś -> render -> repeat
         public void Run()
         {
             _isRunning = true;
@@ -31,13 +32,15 @@ namespace RPG_GAME.App
             while (_isRunning)
             {
                 var command = _input.ReadCommand(CurrentMode);
+                // Jeśli nic się nie stało, czekaj i spróbuj ponownie
                 if (command == InputCommand.None)
                 {
                     Thread.Sleep(10);
                     continue;
                 }
 
-                if (CurrentMode == GameMode.Inventory)
+                // Są dwa światy: normalny (eksploracja) i plecak (inventory)
+                if (ReferenceEquals(CurrentMode, GameMode.Inventory))
                     HandleInventoryMode(command);
                 else
                     HandleNormalMode(command);
@@ -45,15 +48,18 @@ namespace RPG_GAME.App
                 if (!_isRunning)
                     break;
 
+                // Odmaluj wszystko na nowo
                 _renderer.Render(_world, CurrentMode, SelectedInventoryIndex);
             }
         }
 
+       
         public void Stop()
         {
             _isRunning = false;
         }
 
+        // Tryb eksploracji - gracz się rusza, podnosi rzeczy, walczy itp
         private void HandleNormalMode(InputCommand command)
         {
             if (command == InputCommand.OpenInventory)
@@ -63,43 +69,60 @@ namespace RPG_GAME.App
                 _world.AddMessage("Inventory opened.");
                 return;
             }
-
             _commandPipeline.Handle(command, _world, this);
         }
-
         private void HandleInventoryMode(InputCommand command)
         {
-            switch (command)
+            if (command == InputCommand.InventoryUp)
             {
-                case InputCommand.InventoryUp:
-                    MoveInventorySelection(-1);
-                    break;
-                case InputCommand.InventoryDown:
-                    MoveInventorySelection(1);
-                    break;
-                case InputCommand.InventoryEquip:
-                    if (_world.EquipFromBackpack(SelectedInventoryIndex))
-                        ClampInventoryIndex();
-                    break;
-                case InputCommand.InventoryDrop:
-                    if (_world.DropFromBackpack(SelectedInventoryIndex))
-                        ClampInventoryIndex();
-                    break;
-                case InputCommand.InventoryUse:
-                    if (_world.UseFromBackpack(SelectedInventoryIndex))
-                        ClampInventoryIndex();
-                    break;
-                case InputCommand.CloseInventory:
-                    CurrentMode = GameMode.Normal;
-                    _world.AddMessage("Inventory closed.");
-                    break;
-                case InputCommand.Unknown:
-                    _world.AddMessage("Unknown command");
-                    break;
-                default:
-                    _world.AddMessage("Inventory mode: use W/S/E/D/U/ESC");
-                    break;
+                MoveInventorySelection(-1);
+                return;
             }
+
+            if (command == InputCommand.InventoryDown)
+            {
+                MoveInventorySelection(1);
+                return;
+            }
+
+            
+            if (command == InputCommand.InventoryEquip)
+            {
+                if (_world.EquipFromBackpack(SelectedInventoryIndex))
+                    ClampInventoryIndex();
+                return;
+            }
+
+            // Wywal to sobie
+            if (command == InputCommand.InventoryDrop)
+            {
+                if (_world.DropFromBackpack(SelectedInventoryIndex))
+                    ClampInventoryIndex();
+                return;
+            }
+
+            // Użyj tego (napój zdrowia, combo itp) s
+            if (command == InputCommand.InventoryUse)
+            {
+                if (_world.UseFromBackpack(SelectedInventoryIndex))
+                    ClampInventoryIndex();
+                return;
+            }
+
+            if (command == InputCommand.CloseInventory)
+            {
+                CurrentMode = GameMode.Normal;
+                _world.AddMessage("Inventory closed.");
+                return;
+            }
+
+            if (command == InputCommand.Unknown)
+            {
+                _world.AddMessage("Unknown command");
+                return;
+            }
+
+            _world.AddMessage("Inventory mode: use W/S/E/D/U/ESC");
         }
 
         private void MoveInventorySelection(int delta)

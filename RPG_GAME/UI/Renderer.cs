@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using RPG_GAME.App;
 using RPG_GAME.Model;
+using RPG_GAME.Model.DungeonBuilding;
 
 namespace RPG_GAME.UI
 {
@@ -12,7 +14,7 @@ namespace RPG_GAME.UI
         public Renderer()
         {
             _config = new RenderConfig();
-            int bufferHeight = 36;
+            int bufferHeight = 50;
             int bufferWidth = World.Width + _config.PanelWidth;
             _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
@@ -21,7 +23,7 @@ namespace RPG_GAME.UI
         {
             _buffer.Clear();
 
-            if (mode == GameMode.Inventory)
+            if (ReferenceEquals(mode, GameMode.Inventory))
             {
                 RenderInventory(world, selectedInventoryIndex);
             }
@@ -29,7 +31,7 @@ namespace RPG_GAME.UI
             {
                 RenderMap(world);
                 RenderPlayer(world.Player);
-                RenderBottomControls();
+                RenderBottomControls(world);
                 RenderUI(world.Player, world);
             }
 
@@ -44,7 +46,7 @@ namespace RPG_GAME.UI
                 for (int x = 0; x < World.Width; x++)
                 {
                     var tile = world.GetTile(y, x);
-                    char ch = tile.Item != null ? _config.ItemCharacter : GetTileCharacter(tile);
+                    char ch = tile.Item != null ? tile.Item.MapCharacter : GetTileCharacter(tile);
                     _buffer.PutChar(y, x, ch);
                 }
             }
@@ -60,12 +62,14 @@ namespace RPG_GAME.UI
             _buffer.PutChar(player.Pos.Y, player.Pos.X, _config.PlayerCharacter);
         }
 
-        private void RenderBottomControls()
+        private void RenderBottomControls(World world)
         {
             int row = World.Height + 1;
-            _buffer.PutString(row++, 0, "[WASD] move  [E] pick up ");
-            _buffer.PutString(row++, 0, "[X] swap  [1] drop left  [2] drop right");
-            _buffer.PutString(row++, 0, "[B] inventory [Q] quit");
+            int col = 0;
+                    
+            _buffer.PutString(row++, col, "[W/A/S/D] Move  [Q] Quit " );
+            _buffer.PutString(row, col, "[B] Backpack  [ESC] Close");
+
         }
 
         private void RenderUI(Player player, World world)
@@ -82,7 +86,7 @@ namespace RPG_GAME.UI
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
             currentRow = RenderEquipment(player, panelX, currentRow);
-            //RenderMessageLog(panelX, currentRow, world);
+            currentRow = RenderInstructions(world, panelX, currentRow);
         }
 
         private void RenderInventory(World world, int selectedInventoryIndex)
@@ -105,13 +109,29 @@ namespace RPG_GAME.UI
                         continue;
 
                     string marker = i == selectedInventoryIndex ? ">" : " ";
-                    _buffer.PutString(row++, 2, $"{marker} {i + 1}. {item.Name} ({item.Type})");
+                    _buffer.PutString(row++, 2, $"{marker} {i + 1}. [{item.MapCharacter}] {item.Name}");
+                    
+                    // Pokaż DMG i DUR dla broni
+                    if (item.Type == "Melee" || item.Type == "Magic")
+                    {
+                        _buffer.PutString(row++, 4, $"DMG: {item.Value}  DUR: {item.Durability}");
+                    }
+                    // Pokaż wartość dla innych przedmiotów
+                    else if (item.Value > 0 && item.Type != "Heal")
+                    {
+                        _buffer.PutString(row++, 4, $"Value: {item.Value}");
+                    }
                 }
             }
 
             row += 2;
-            _buffer.PutString(row++, 2, "[W] Up  [S] Down");
-            _buffer.PutString(row++, 2, "[E] Equip  [D] Drop  [U] Use  [ESC] Close");
+            row = RenderInventoryControls(row);
+        }
+
+        private int RenderInventoryControls(int row)
+        {
+            _buffer.PutString(row++, 2, "[W/S] Navigate  [E] Equip  [D] Drop  [U] Use  [ESC] Close");
+            return row;
         }
 
         private int RenderHeader(int panelX, int startRow)
@@ -123,18 +143,16 @@ namespace RPG_GAME.UI
 
         private int RenderCurrentTileInfo(int panelX, int startRow, Items? item)
         {
-            _buffer.PutString(startRow++, panelX, "=== CURRENT TILE INFO ===");
+            _buffer.PutString(startRow++, panelX, "=== CURRENT TILE ===");
 
             if (item == null)
             {
-                _buffer.PutString(startRow++, panelX, "Item: (none)");
+                _buffer.PutString(startRow++, panelX, "(empty)");
                 return startRow + 1;
             }
 
-            _buffer.PutString(startRow++, panelX, $"Name: {item.Name}");
-            _buffer.PutString(startRow++, panelX, $"Type: {item.Type}");
-            _buffer.PutString(startRow++, panelX, $"Value: {item.Value}");
-            _buffer.PutString(startRow++, panelX, $"Durability: {item.Durability}");
+            _buffer.PutString(startRow++, panelX, $"[{item.MapCharacter}] {item.Name}");
+            _buffer.PutString(startRow++, panelX, $"Value: {item.Value} | Dur: {item.Durability}");
             return startRow + 1;
         }
 
@@ -150,11 +168,11 @@ namespace RPG_GAME.UI
         {
             _buffer.PutString(startRow++, panelX, "=== STATS ===");
             _buffer.PutString(startRow++, panelX, $"HP: {player.Stats.Health}/{player.Stats.MaxHealth}");
-            _buffer.PutString(startRow++, panelX, $"STRENGTH: {player.Stats.Strength}");
-            _buffer.PutString(startRow++, panelX, $"DEXTERITY: {player.Stats.Dexterity}");
-            _buffer.PutString(startRow++, panelX, $"LUCK: {player.Stats.Luck}");
-            _buffer.PutString(startRow++, panelX, $"AGGRESSION: {player.Stats.Aggression}");
-            _buffer.PutString(startRow++, panelX, $"WISDOM: {player.Stats.Wisdom}");
+            _buffer.PutString(startRow++, panelX, $"STR: {player.Stats.Strength}");
+            _buffer.PutString(startRow++, panelX, $"DEX: {player.Stats.Dexterity}");
+            _buffer.PutString(startRow++, panelX, $"LCK: {player.Stats.Luck}");
+            _buffer.PutString(startRow++, panelX, $"AGG: {player.Stats.Aggression}");
+            _buffer.PutString(startRow++, panelX, $"WIS: {player.Stats.Wisdom}");
             return startRow + 1;
         }
 
@@ -167,7 +185,7 @@ namespace RPG_GAME.UI
 
             if (leftHand == null && rightHand == null)
             {
-                _buffer.PutString(startRow++, panelX, "No weapons yet");
+                _buffer.PutString(startRow++, panelX, "(none)");
             }
             else if (player.Inventory.HasTwoHandedWeapon)
             {
@@ -175,43 +193,25 @@ namespace RPG_GAME.UI
                 if (weapon != null)
                 {
                     _buffer.PutString(startRow++, panelX, $"2H: {weapon.Name}");
-                    _buffer.PutString(startRow++, panelX, $"DMG: {weapon.Value}");
+                    _buffer.PutString(startRow++, panelX, $"DMG: {weapon.Value}  DUR: {weapon.Durability}");
                 }
             }
             else
             {
-                string leftText = leftHand != null
-                    ? $"L: {leftHand.Name} ({leftHand.Value})"
-                    : "L: (empty)";
-                _buffer.PutString(startRow++, panelX, leftText);
-
-                string rightText = rightHand != null
-                    ? $"R: {rightHand.Name} ({rightHand.Value})"
-                    : "R: (empty)";
-                _buffer.PutString(startRow++, panelX, rightText);
+                if (leftHand != null)
+                {
+                    _buffer.PutString(startRow++, panelX, $"L: {leftHand.Name}");
+                    _buffer.PutString(startRow++, panelX, $"DMG: {leftHand.Value}  DUR: {leftHand.Durability}");
+                }
+                if (rightHand != null)
+                {
+                    _buffer.PutString(startRow++, panelX, $"R: {rightHand.Name}");
+                    _buffer.PutString(startRow++, panelX, $"DMG: {rightHand.Value}  DUR: {rightHand.Durability}");
+                }
             }
 
-            _buffer.PutString(startRow++, panelX, $"Backpack: {player.Inventory.Count()}/{player.Inventory.MaxBackpackSize}");
             return startRow + 1;
         }
-
-        //private int RenderMessageLog(int panelX, int startRow, World world)
-        //{
-        //    _buffer.PutString(startRow++, panelX, "=== MESSAGE LOG ===");
-
-        //    if (world.MessageLog.Count == 0)
-        //    {
-        //        _buffer.PutString(startRow++, panelX, "(no messages)");
-        //        return startRow + 1;
-        //    }
-
-        //    foreach (var message in world.MessageLog)
-        //    {
-        //        _buffer.PutString(startRow++, panelX, $"- {message}");
-        //    }
-
-        //    return startRow + 1;
-        //}
 
         private void RenderCurrentMessage(World world)
         {
@@ -220,6 +220,28 @@ namespace RPG_GAME.UI
 
             int row = 34;
             _buffer.PutString(row, 0, $"Message: {world.CurrentMessage}");
+        }
+        private int RenderInstructions(World world, int panelX, int startRow)
+        {
+            _buffer.PutString(startRow++, panelX, "=== CONTROLS ===");
+            var dynamicInstructions = world.AvailableInstructions
+                .Where(i => i.Key != "WASD" && i.Key != "Q" && i.Key != "B" && i.Key != "ESC")
+                .GroupBy(i => i.Key)
+                .Select(g => g.First())
+                .ToList();
+
+            if (dynamicInstructions.Count == 0)
+            {
+                _buffer.PutString(startRow++, panelX, "(none)");
+                return startRow + 1;
+            }
+
+            foreach (var instruction in dynamicInstructions)
+            {
+                _buffer.PutString(startRow++, panelX, instruction.ToDisplayText());
+            }
+
+            return startRow + 1;
         }
     }
 

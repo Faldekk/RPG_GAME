@@ -1,81 +1,78 @@
 ﻿using RPG_GAME.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RPG_GAME.App
 {
-    //Nwm czy mi sie chce to tlumaczyc ale to to jest dosc proste
     public abstract class CommandHandler
     {
         protected CommandHandler? next;
 
+        // Łączenie handlerów w łańcuch - jeden handler do drugiego
         public void SetNext(CommandHandler nextHandler)
         {
             next = nextHandler;
         }
 
+        // Procesowanie komendy - jeśli handler się nie zajmie, to przechodzi dalej w łańcuchu
         public void Handle(InputCommand cmd, World world, Game game)
         {
             if (!Process(cmd, world, game))
                 next?.Handle(cmd, world, game);
         }
 
+        // Trzymaj się: implementuj to i rób coś sensownego albo puść dalej
         protected abstract bool Process(InputCommand cmd, World world, Game game);
     }
 
+    // Rozjebane - gracz leci w górę
     public class MoveUpHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Up) return false;
-
             world.TryMovePlayer(0, -1);
             return true;
         }
     }
 
+    // Rozjebane - gracz leci w dół
     public class MoveDownHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Down) return false;
-
             world.TryMovePlayer(0, 1);
             return true;
         }
     }
 
+    // Rozjebane - gracz leci w lewo
     public class MoveLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Left) return false;
-
             world.TryMovePlayer(-1, 0);
             return true;
         }
     }
 
+    // Rozjebane - gracz leci w prawo
     public class MoveRightHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Right) return false;
-
             world.TryMovePlayer(1, 0);
             return true;
         }
     }
 
+    // E - podnieś co jest pod dupą
     public class PickupHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Pickup) return false;
-
             world.TryPickUpItem();
             return true;
         }
@@ -86,7 +83,6 @@ namespace RPG_GAME.App
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.BackpackAction) return false;
-
             world.TryBackpackAction();
             return true;
         }
@@ -97,7 +93,6 @@ namespace RPG_GAME.App
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.SwapWeapons) return false;
-
             world.Player.SwapWeapons();
             return true;
         }
@@ -108,7 +103,6 @@ namespace RPG_GAME.App
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.DropLeftHand) return false;
-
             world.TryDropItem(0);
             return true;
         }
@@ -119,7 +113,6 @@ namespace RPG_GAME.App
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.DropRightHand) return false;
-
             world.TryDropItem(1);
             return true;
         }
@@ -140,7 +133,6 @@ namespace RPG_GAME.App
         protected override bool Process(InputCommand cmd, World world, Game game)
         {
             if (cmd != InputCommand.Unknown) return false;
-
             world.AddMessage("Unknown command");
             return true;
         }

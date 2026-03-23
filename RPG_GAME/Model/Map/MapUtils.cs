@@ -14,7 +14,6 @@ namespace RPG_GAME.Model.Map
                 }
             }
         }
-
         public static void CarveHorizontalTunnel(Tile[,] tiles, int x1, int x2, int y)
         {
             for (int x = System.Math.Min(x1, x2); x <= System.Math.Max(x1, x2); x++)
@@ -22,7 +21,6 @@ namespace RPG_GAME.Model.Map
                 tiles[y, x].IsWall = false;
             }
         }
-
         public static void CarveVerticalTunnel(Tile[,] tiles, int y1, int y2, int x)
         {
             for (int y = System.Math.Min(y1, y2); y <= System.Math.Max(y1, y2); y++)
@@ -30,16 +28,17 @@ namespace RPG_GAME.Model.Map
                 tiles[y, x].IsWall = false;
             }
         }
-
         public static void CarveCorridor(Tile[,] tiles, int fromX, int fromY, int toX, int toY)
         {
             if (Random.Shared.Next(2) == 0)
             {
+               
                 CarveHorizontalTunnel(tiles, fromX, toX, fromY);
                 CarveVerticalTunnel(tiles, fromY, toY, toX);
             }
             else
             {
+               
                 CarveVerticalTunnel(tiles, fromY, toY, fromX);
                 CarveHorizontalTunnel(tiles, fromX, toX, toY);
             }

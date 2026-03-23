@@ -4,8 +4,12 @@ namespace RPG_GAME.Model.DungeonBuilding
 {
     public class AddPathsStep : IDungeonBuildStep
     {
+        public bool IsStarter => false;
+
+        // Połącz wszystkie komnatki korytarzami - każda komnata połączona z następną
         public void Execute(Tile[,] tiles, int width, int height, BuildContext context)
         {
+            // Idź przez każdą parę komnat i rób korytarz między nimi
             for (int index = 1; index < context.Rooms.Count; index++)
             {
                 var previousRoom = context.Rooms[index - 1];
@@ -18,6 +22,9 @@ namespace RPG_GAME.Model.DungeonBuilding
                     currentRoom.CenterX,
                     currentRoom.CenterY);
             }
+
+            // Zaznacz że są ścieżki
+            context.AddFeature("paths");
         }
     }
 }

@@ -6,35 +6,57 @@ namespace RPG_GAME.Model
     public static class WeaponGenerator
     {
         private static readonly Random _random = Random.Shared;
-        
-        private static readonly List<(string name, string type, int damage, bool twoHanded, bool isHeal)> _weaponTemplates = new()
-        {
-            //AI generated nazwy broni poza bloody mary bo mi sie nie chcialo tematycznie nazwy broni wymyslac
-            ("Rusty Sword", "Melee", 5, false,false),
-            ("Iron Axe", "Melee", 8, false, false),
-            ("Wooden Staff", "Magic", 6, true, false),
-            ("Great Sword", "Melee", 15, true, false),
-            ("Dagger", "Melee", 3, false, false),
-            ("Club", "Melee", 4, false,false),
-            ("Orb of Heal", "Magic", 20, false, true),
-            ("Bloody Mary", "Magic", 5, false, true),
 
+        private static readonly List<(string name, string type, int damage, bool twoHanded)> _weaponTemplates = new()
+        {
+            ("Rusty Sword", "Melee", 5, false),
+            ("Iron Axe", "Melee", 8, false),
+            ("Wooden Staff", "Magic", 6, true),
+            ("Great Sword", "Melee", 15, true),
+            ("Dagger", "Melee", 3, false),
+            ("Club", "Melee", 4, false),
+            ("Arcane Wand", "Magic", 7, false),
+            ("Crystal Tome", "Magic", 9, true)
         };
-        //bierze bron z templatki
+
         public static Items GenerateRandomWeapon(Vec2 position)
         {
             var template = _weaponTemplates[_random.Next(_weaponTemplates.Count)];
-            
-            return new Items(
+
+            int strengthBonus = 0;
+            int dexterityBonus = template.twoHanded ? 0 : 1;
+            int aggressionBonus = 0;
+            int wisdomBonus = 0;
+            int luckBonus = 0;
+
+            if (template.type.Equals("Melee", StringComparison.OrdinalIgnoreCase))
+            {
+                strengthBonus += Math.Max(1, template.damage / 4);
+                aggressionBonus += 1;
+                if (template.twoHanded)
+                    strengthBonus += 2;
+            }
+            else
+            {
+                wisdomBonus += Math.Max(1, template.damage / 5);
+                luckBonus += 1;
+                if (template.twoHanded)
+                    wisdomBonus += 2;
+            }
+
+            return new WeaponItem(
                 template.name,
                 template.type,
                 template.damage,
                 template.twoHanded,
-                template.isHeal,
-                new Tuple<int, int>(position.X, position.Y)
-            );
+                strengthBonus,
+                dexterityBonus,
+                aggressionBonus,
+                wisdomBonus,
+                luckBonus,
+                new Tuple<int, int>(position.X, position.Y));
         }
-        //wrzuca na ten vector on na tile i do renderka fwaeh 
+
         public static Items GenerateRandomWeapon(int x, int y)
         {
             return GenerateRandomWeapon(new Vec2(x, y));

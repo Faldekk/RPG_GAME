@@ -2,11 +2,11 @@
 {
     public struct RectRoom
     {
-        //Struktura pokoi
-        public int X;
-        public int Y;
-        public int Width;
-        public int Height;
+        // Struktura do trzymania info o prostokątnym pokoju
+        public int X;      // Pozycja X (lewy górny róg)
+        public int Y;      // Pozycja Y (lewy górny róg)
+        public int Width;  // Szerokość
+        public int Height; // Wysokość
 
         public RectRoom(int x, int y, int width, int height)
         {
@@ -16,9 +16,11 @@
             Height = height;
         }
 
+        // Środek komnaty - tu będą korytarze połączone
         public int CenterX => X + Width / 2;
         public int CenterY => Y + Height / 2;
 
+        // Sprawdzaj czy dwa pokoje się przenikają - wypadałoby nie
         public bool Intersects(RectRoom other)
         {
             return X <= other.X + other.Width &&

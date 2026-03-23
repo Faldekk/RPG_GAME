@@ -4,6 +4,10 @@ namespace RPG_GAME.Model.DungeonBuilding
 {
     public class EmptyDungeonStep : IDungeonBuildStep
     {
+       
+        public bool IsStarter => true;
+
+      
         public void Execute(Tile[,] tiles, int width, int height, BuildContext context)
         {
             for (int y = 0; y < height; y++)
@@ -13,6 +17,7 @@ namespace RPG_GAME.Model.DungeonBuilding
                     tiles[y, x] = new Tile(false);
                 }
             }
+            context.AddFeature("empty_dungeon");
         }
     }
 }
