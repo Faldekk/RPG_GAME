@@ -11,9 +11,9 @@ namespace RPG_GAME.Model
         public virtual bool IsHeal => false;
         public Tuple<int, int>? Position { get; set; }
         public int Count;
-        public int Durability { get; protected set; }  
-        public virtual char MapCharacter => 'x';  
-        public virtual bool CanEquip => false;   
+        public int Durability { get; protected set; }
+        public virtual char MapCharacter => 'x';
+        public virtual bool CanEquip => false;
 
         protected Items(string name, string type, int value, Tuple<int, int>? position = null)
         {
@@ -25,14 +25,14 @@ namespace RPG_GAME.Model
             Durability = 100;
         }
 
-        
+
         public virtual void Use()
         {
             if (Durability > 0)
                 Durability -= 5;
         }
 
-        
+
         public virtual bool TryCollect(Player player, out string message)
         {
             message = string.Empty;
@@ -46,12 +46,12 @@ namespace RPG_GAME.Model
             return false;
         }
 
-        
+
         public virtual void ApplyEquipBonuses(PlayerStats stats)
         {
         }
 
-        
+
         public virtual void RemoveEquipBonuses(PlayerStats stats)
         {
         }
