@@ -8,7 +8,6 @@ namespace RPG_GAME.Model
 {
     public readonly struct Vec2
     {
-       // public readonly List<RectRoom> rooms;
         public int X { get; }
         public int Y { get; }
 

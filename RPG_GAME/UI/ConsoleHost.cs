@@ -3,7 +3,6 @@ using System.Text;
 
 namespace RPG_GAME.UI
 {
-    //tak jak obiecane jest obsluga konsoli w jednym pliku
     public static class ConsoleHost
     {
         public static bool IsOutputRedirected => Console.IsOutputRedirected;
