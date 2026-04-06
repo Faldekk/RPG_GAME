@@ -1,12 +1,10 @@
-﻿namespace RPG_GAME.Model
+namespace RPG_GAME.Model
 {
     public class Player
     {
-        //Klasa gracza 
         public PlayerStats Stats { get; private set; }
         public PlayerInventory Inventory { get; private set; }
         public Vec2 Pos { get; private set; }
-        // moze sie przydac do ekranu smierci 
         public bool IsAlive => Stats.IsAlive;
 
         public Player(Vec2 startPosition)
@@ -19,7 +17,6 @@
         {
             Pos = newPos;
         }
-        //zmiana reki X
         public void SwapWeapons()
         {
             var temp = Inventory.LeftHand;

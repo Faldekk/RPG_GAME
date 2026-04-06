@@ -6,7 +6,6 @@ namespace RPG_GAME.Model.DungeonBuilding
 {
     public class BuildContext
     {
-        // Kontekst budowania - zbiera wszystko co się dzieje podczas generacji podziemi
         private readonly List<BuildInstruction> _instructions = new();     
         private readonly HashSet<string> _features = new(); 
 
@@ -29,7 +28,7 @@ namespace RPG_GAME.Model.DungeonBuilding
             _instructions.Add(new BuildInstruction(key, description));
         }
 
-        // Dodaj instrukcję dla gracza z bezpośrednim użyciem BuildInstruction (preferowane)
+        
         public void AddInstruction(BuildInstruction instruction)
         {
             _instructions.Add(instruction);

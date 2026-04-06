@@ -51,5 +51,11 @@ namespace RPG_GAME.Model
             get => GetCurrency("Gold");
             set => SetCurrency("Gold", Math.Max(0, value));
         }
+
+        public int Armor
+        {
+            get => GetStat("Armor");
+            set => SetStat("Armor", Math.Max(0, value));
+        }
     }
 }

@@ -1,24 +1,19 @@
-namespace RPG_GAME.Model.DungeonBuilding
+using RPG_GAME.Model.DungeonBuilding;
+
+namespace RPG_GAME.UI
 {
     public static class ControlsConfig
     {
-        // === MOVEMENT ===
         
         public static readonly BuildInstruction Movement = new("WASD", "move");
         public static readonly BuildInstruction Quit = new("Q", "quit");
-
-        // === PICKUP & INVENTORY ===
         
         public static readonly BuildInstruction PickUp = new("E", "pick up");
         public static readonly BuildInstruction OpenInventory = new("B", "inventory");
         public static readonly BuildInstruction CloseInventory = new("ESC", "close inventory");
-
-        // === EQUIPMENT ===
         public static readonly BuildInstruction SwapWeapons = new("X", "swap weapons");
         public static readonly BuildInstruction DropLeft = new("1", "drop left");
         public static readonly BuildInstruction DropRight = new("2", "drop right");
-
-        // === INVENTORY ACTIONS ===
 
         public static readonly BuildInstruction InventoryUp = new("W", "up");
         
@@ -28,5 +23,10 @@ namespace RPG_GAME.Model.DungeonBuilding
         
         public static readonly BuildInstruction InventoryDrop = new("D", "drop");
         public static readonly BuildInstruction InventoryUse = new("U", "use");
+        public static readonly BuildInstruction InventoryCraftArmor = new("C", "craft armor");
+        
+        public static readonly BuildInstruction CombatNormal = new("1", "normal attack");
+        public static readonly BuildInstruction CombatStealth = new("2", "stealth attack");
+        public static readonly BuildInstruction CombatMagical = new("3", "magical attack");
     }
 }

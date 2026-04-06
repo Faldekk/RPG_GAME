@@ -1,4 +1,5 @@
 using RPG_GAME.Model.Map;
+using RPG_GAME.UI;
 
 namespace RPG_GAME.Model.DungeonBuilding
 {
@@ -12,8 +13,6 @@ namespace RPG_GAME.Model.DungeonBuilding
         {
             _count = count;
         }
-
-        // Wylosuj sobie rzeczy w podziemiach - szukaj wolnych miejsc aby nie się nie nakładało
         public void Execute(Tile[,] tiles, int width, int height, BuildContext context)
         {
             int spawned = 0;
@@ -26,20 +25,15 @@ namespace RPG_GAME.Model.DungeonBuilding
 
                 int y = Random.Shared.Next(1, height - 1);
                 int x = Random.Shared.Next(1, width - 1);
-                // Pomiń ściany i pola gdzie coś już leży
                 if (tiles[y, x].IsWall || tiles[y, x].Item != null)
                     continue;
 
                 tiles[y, x].Item = ItemGenerator.GenerateRandomJunk(new Vec2(x, y));
                 spawned++;
             }
-
-            // Jeśli coś spawniło, daj graczowi wiedzę że może to zbierać
             if (spawned > 0)
                 context.AddFeature("items");
         }
-
-        // Zarejestruj instrukcję - jak są przedmioty to gracz może je podnosić
         public void RegisterInstructions(BuildContext context)
         {
             if (context.HasFeature("items"))

@@ -1,4 +1,4 @@
-﻿using RPG_GAME.App;
+using RPG_GAME.App;
 using RPG_GAME.Model;
 using RPG_GAME.UI;
 

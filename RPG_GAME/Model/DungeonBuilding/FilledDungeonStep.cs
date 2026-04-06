@@ -11,7 +11,6 @@ namespace RPG_GAME.Model.DungeonBuilding
             {
                 for (int x = 0; x < width; x++)
                 {
-                    // Każde pole to ściana
                     tiles[y, x] = new Tile(true);
                 }
             }

@@ -22,7 +22,8 @@ namespace RPG_GAME.Model
                 { "Health", 100 },
                 { "Luck", 50 },
                 { "Agression", 25 },
-                { "Wisdom", 0 }
+                { "Wisdom", 0 },
+                { "Armor", 0 }
             };
 
             _currency = new Dictionary<string, int>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace RPG_GAME.Model
 {
@@ -38,8 +38,6 @@ namespace RPG_GAME.Model
             message = string.Empty;
             return false;
         }
-
-        //kiedys to dodam bo to juz jest od 4 tyg w kodzie
         public virtual bool TryUse(Player player, out string message)
         {
             message = "Item cannot be used.";

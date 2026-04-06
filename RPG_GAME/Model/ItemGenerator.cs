@@ -25,7 +25,6 @@ namespace RPG_GAME.Model
             var junk = _junkTemplates[Random.Shared.Next(_junkTemplates.Count)];
             return new JunkItem(junk.name, junk.value, new Tuple<int, int>(position.X, position.Y));
         }
-        //Totolotek najwyzej bedzisz walyczl potkami
         public static Items GenerateRandomNonWeapon(Vec2 position)
         {
             int roll = Random.Shared.Next(100);

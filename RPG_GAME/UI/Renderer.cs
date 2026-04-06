@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using RPG_GAME.App;
 using RPG_GAME.Model;
@@ -19,13 +19,25 @@ namespace RPG_GAME.UI
             _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
 
-        public void Render(World world, GameMode mode, int selectedInventoryIndex)
+        public void Render(World world, GameMode mode, int selectedInventoryIndex, int craftingFirstSelection = -1)
         {
             _buffer.Clear();
 
             if (ReferenceEquals(mode, GameMode.Inventory))
             {
                 RenderInventory(world, selectedInventoryIndex);
+            }
+            else if (ReferenceEquals(mode, GameMode.Combat))
+            {
+                RenderCombat(world);
+            }
+            else if (ReferenceEquals(mode, GameMode.Death))
+            {
+                RenderDeath(world);
+            }
+            else if (ReferenceEquals(mode, GameMode.WeaponCrafting))
+            {
+                RenderWeaponCrafting(world, craftingFirstSelection);
             }
             else
             {
@@ -46,7 +58,14 @@ namespace RPG_GAME.UI
                 for (int x = 0; x < World.Width; x++)
                 {
                     var tile = world.GetTile(y, x);
-                    char ch = tile.Item != null ? tile.Item.MapCharacter : GetTileCharacter(tile);
+                    char ch = tile.IsCraftingStation
+                        ? '◊'
+                        : tile.Enemy != null
+                            ? tile.Enemy.MapCharacter
+                            : tile.Item != null
+                                ? tile.Item.MapCharacter
+                                : GetTileCharacter(tile);
+
                     _buffer.PutChar(y, x, ch);
                 }
             }
@@ -67,7 +86,7 @@ namespace RPG_GAME.UI
             int row = World.Height + 1;
             int col = 0;
                     
-            _buffer.PutString(row++, col, "[W/A/S/D] Move  [Q] Quit " );
+            _buffer.PutString(row++, col, "[W/A/S/D] Move  [Q] Quit  [E] Interact " );
             _buffer.PutString(row, col, "[B] Backpack  [ESC] Close");
 
         }
@@ -110,13 +129,10 @@ namespace RPG_GAME.UI
 
                     string marker = i == selectedInventoryIndex ? ">" : " ";
                     _buffer.PutString(row++, 2, $"{marker} {i + 1}. [{item.MapCharacter}] {item.Name}");
-                    
-                    // Pokaż DMG i DUR dla broni
                     if (item.Type == "Melee" || item.Type == "Magic")
                     {
                         _buffer.PutString(row++, 4, $"DMG: {item.Value}  DUR: {item.Durability}");
                     }
-                    // Pokaż wartość dla innych przedmiotów
                     else if (item.Value > 0 && item.Type != "Heal")
                     {
                         _buffer.PutString(row++, 4, $"Value: {item.Value}");
@@ -130,7 +146,7 @@ namespace RPG_GAME.UI
 
         private int RenderInventoryControls(int row)
         {
-            _buffer.PutString(row++, 2, "[W/S] Navigate  [E] Equip  [D] Drop  [U] Use  [ESC] Close");
+            _buffer.PutString(row++, 2, "[W/S] Navigate  [E] Equip  [D] Drop  [U] Use  [C] CraftArmor  [ESC] Close");
             return row;
         }
 
@@ -173,6 +189,7 @@ namespace RPG_GAME.UI
             _buffer.PutString(startRow++, panelX, $"LCK: {player.Stats.Luck}");
             _buffer.PutString(startRow++, panelX, $"AGG: {player.Stats.Aggression}");
             _buffer.PutString(startRow++, panelX, $"WIS: {player.Stats.Wisdom}");
+            _buffer.PutString(startRow++, panelX, $"ARM: {player.Stats.Armor}");
             return startRow + 1;
         }
 
@@ -242,6 +259,115 @@ namespace RPG_GAME.UI
             }
 
             return startRow + 1;
+        }
+
+        private void RenderCombat(World world)
+        {
+            int row = 1;
+            int col = 2;
+
+            _buffer.PutString(row++, col, "=== COMBAT MODE ===");
+            row++;
+
+            var enemy = world.ActiveEnemy;
+            if (enemy == null)
+            {
+                _buffer.PutString(row++, col, "No active enemy.");
+                return;
+            }
+
+            _buffer.PutString(row++, col, $"Enemy: {enemy.Name}");
+            _buffer.PutString(row++, col, $"Enemy HP: {enemy.Health}");
+            _buffer.PutString(row++, col, $"Enemy ATK: {enemy.AttackMin}-{enemy.AttackMax}");
+            _buffer.PutString(row++, col, $"Enemy ARM: {enemy.Armor}");
+            row++;
+
+            _buffer.PutString(row++, col, $"Player HP: {world.Player.Stats.Health}/{world.Player.Stats.MaxHealth}");
+            _buffer.PutString(row++, col, $"Player ARM: {world.Player.Stats.Armor}");
+
+            var left = world.Player.Inventory.LeftHand;
+            var right = world.Player.Inventory.RightHand;
+            var weapon = left ?? right;
+            if (weapon != null)
+            {
+                _buffer.PutString(row++, col, $"Weapon: {weapon.Name}");
+                _buffer.PutString(row++, col, $"DMG: {weapon.Value}  DUR: {weapon.Durability}");
+            }
+            else
+            {
+                _buffer.PutString(row++, col, "Weapon: none");
+            }
+
+            row += 2;
+            _buffer.PutString(row++, col, "[1] Normal attack");
+            _buffer.PutString(row++, col, "[2] Stealth attack");
+            _buffer.PutString(row++, col, "[3] Magical attack");
+        }
+
+        private void RenderDeath(World world)
+        {
+            int row = 8;
+            int col = 10;
+
+            _buffer.PutString(row++, col, "╔════════════════════════╗");
+            _buffer.PutString(row++, col, "║                        ║");
+            _buffer.PutString(row++, col, "║       YOU LOST         ║");
+            _buffer.PutString(row++, col, "║                        ║");
+            _buffer.PutString(row++, col, "╚════════════════════════╝");
+            row++;
+
+            _buffer.PutString(row++, col, "Final Stats:");
+            _buffer.PutString(row++, col + 2, $"Level reached: ???");
+            _buffer.PutString(row++, col + 2, $"Coins collected: {world.Player.Stats.Coins}");
+            _buffer.PutString(row++, col + 2, $"Gold collected: {world.Player.Stats.Gold}");
+            row++;
+
+            _buffer.PutString(row++, col, "═════════════════════════════");
+            row++;
+
+            _buffer.PutString(row++, col, "[R] Respawn and try again");
+            _buffer.PutString(row++, col, "[Q] Quit to main menu");
+        }
+
+        private void RenderWeaponCrafting(World world, int craftingFirstSelection)
+        {
+            int row = 1;
+            int col = 2;
+
+            _buffer.PutString(row++, col, "=== WEAPON CRAFTING STATION ===");
+            row++;
+
+            _buffer.PutString(row++, col, "Available weapons in inventory:");
+            row++;
+
+            var weapons = new System.Collections.Generic.List<WeaponItem>();
+            for (int i = 0; i < world.Player.Inventory.Count(); i++)
+            {
+                var item = world.Player.Inventory.GetItem(i);
+                if (item is WeaponItem weapon)
+                    weapons.Add(weapon);
+            }
+
+            if (weapons.Count == 0)
+            {
+                _buffer.PutString(row++, col, "No weapons to combine!");
+                _buffer.PutString(row++, col, "Get back with [ESC]");
+                return;
+            }
+
+            for (int i = 0; i < weapons.Count; i++)
+            {
+                var weapon = weapons[i];
+                string marker = i == craftingFirstSelection ? ">>> " : "    ";
+                _buffer.PutString(row++, col, $"{marker}[{i + 1}] {weapon.Name} (DMG: {weapon.Value})");
+            }
+
+            row += 2;
+            _buffer.PutString(row++, col, "Controls:");
+            _buffer.PutString(row++, col, "[W/↑] Next weapon");
+            _buffer.PutString(row++, col, "[S/↓] Previous weapon");
+            _buffer.PutString(row++, col, "[E] Combine selected with next");
+            _buffer.PutString(row++, col, "[ESC] Leave station");
         }
     }
 

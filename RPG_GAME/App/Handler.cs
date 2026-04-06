@@ -1,4 +1,4 @@
-﻿using RPG_GAME.Model;
+using RPG_GAME.Model;
 
 namespace RPG_GAME.App
 {
@@ -6,24 +6,20 @@ namespace RPG_GAME.App
     {
         protected CommandHandler? next;
 
-        // Łączenie handlerów w łańcuch - jeden handler do drugiego
         public void SetNext(CommandHandler nextHandler)
         {
             next = nextHandler;
         }
 
-        // Procesowanie komendy - jeśli handler się nie zajmie, to przechodzi dalej w łańcuchu
         public void Handle(InputCommand cmd, World world, Game game)
         {
             if (!Process(cmd, world, game))
                 next?.Handle(cmd, world, game);
         }
 
-        // Trzymaj się: implementuj to i rób coś sensownego albo puść dalej
         protected abstract bool Process(InputCommand cmd, World world, Game game);
     }
 
-   
     public class MoveUpHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -34,7 +30,6 @@ namespace RPG_GAME.App
         }
     }
 
-    
     public class MoveDownHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -45,7 +40,6 @@ namespace RPG_GAME.App
         }
     }
 
-   
     public class MoveLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -56,7 +50,6 @@ namespace RPG_GAME.App
         }
     }
 
-    
     public class MoveRightHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
@@ -67,7 +60,6 @@ namespace RPG_GAME.App
         }
     }
 
-    // E - podnieś co jest pod dupą
     public class PickupHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game game)
