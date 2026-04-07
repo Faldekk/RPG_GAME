@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RPG_GAME.Model.Combat;
 using RPG_GAME.Model.ItemModifiers;
 
 namespace RPG_GAME.Model
@@ -8,54 +9,37 @@ namespace RPG_GAME.Model
     {
         private static readonly Random _random = Random.Shared;
 
-        private static readonly List<(string name, string type, int damage, bool twoHanded)> _weaponTemplates = new()
+        private static readonly List<WeaponTemplate> _weaponTemplates = new()
         {
-            ("Rusty Sword", "Melee", 5, false),
-            ("Iron Axe", "Melee", 8, false),
-            ("Wooden Staff", "Magic", 6, true),
-            ("Great Sword", "Melee", 15, true),
-            ("Dagger", "Melee", 3, false),
-            ("Club", "Melee", 4, false),
-            ("Arcane Wand", "Magic", 7, false),
-            ("Crystal Tome", "Magic", 9, true)
+            new("Rusty Sword", "Melee", 5, false, HeavyWeaponCategory.Instance, StrengthBonus: 2, DexterityBonus: 1, AggressionBonus: 1, WisdomBonus: 0, LuckBonus: 0),
+            new("Iron Axe", "Melee", 8, false, HeavyWeaponCategory.Instance, StrengthBonus: 3, DexterityBonus: 1, AggressionBonus: 1, WisdomBonus: 0, LuckBonus: 0),
+            new("Wooden Staff", "Magic", 6, true, MagicalWeaponCategory.Instance, StrengthBonus: 0, DexterityBonus: 0, AggressionBonus: 0, WisdomBonus: 3, LuckBonus: 1),
+            new("Great Sword", "Melee", 15, true, HeavyWeaponCategory.Instance, StrengthBonus: 5, DexterityBonus: 0, AggressionBonus: 1, WisdomBonus: 0, LuckBonus: 0),
+            new("Dagger", "Melee", 3, false, LightWeaponCategory.Instance, StrengthBonus: 0, DexterityBonus: 2, AggressionBonus: 0, WisdomBonus: 0, LuckBonus: 2),
+            new("Club", "Melee", 4, false, HeavyWeaponCategory.Instance, StrengthBonus: 2, DexterityBonus: 1, AggressionBonus: 1, WisdomBonus: 0, LuckBonus: 0),
+            new("Arcane Wand", "Magic", 7, false, MagicalWeaponCategory.Instance, StrengthBonus: 0, DexterityBonus: 1, AggressionBonus: 0, WisdomBonus: 2, LuckBonus: 1),
+            new("Crystal Tome", "Magic", 9, true, MagicalWeaponCategory.Instance, StrengthBonus: 0, DexterityBonus: 0, AggressionBonus: 0, WisdomBonus: 4, LuckBonus: 1)
         };
 
         public static Items GenerateRandomWeapon(Vec2 position)
         {
             var template = _weaponTemplates[_random.Next(_weaponTemplates.Count)];
+            var positionTuple = new Tuple<int, int>(position.X, position.Y);
 
-            int strengthBonus = 0;
-            int dexterityBonus = template.twoHanded ? 0 : 1;
-            int aggressionBonus = 0;
-            int wisdomBonus = 0;
-            int luckBonus = 0;
+            Items weapon = new WeaponItem(
+                template.Name,
+                template.DisplayType,
+                template.Damage,
+                template.IsTwoHanded,
+                template.StrengthBonus,
+                template.DexterityBonus,
+                template.AggressionBonus,
+                template.WisdomBonus,
+                template.LuckBonus,
+                template.Category,
+                positionTuple);
 
-            if (template.type.Equals("Melee", StringComparison.OrdinalIgnoreCase))
-            {
-                strengthBonus += Math.Max(1, template.damage / 4);
-                aggressionBonus += 1;
-                if (template.twoHanded)
-                    strengthBonus += 2;
-            }
-            else
-            {
-                wisdomBonus += Math.Max(1, template.damage / 5);
-                luckBonus += 1;
-                if (template.twoHanded)
-                    wisdomBonus += 2;
-            }
-
-            return BuildWeaponWithModifiers(
-                template.name,
-                template.type,
-                template.damage,
-                template.twoHanded,
-                strengthBonus,
-                dexterityBonus,
-                aggressionBonus,
-                wisdomBonus,
-                luckBonus,
-                new Tuple<int, int>(position.X, position.Y));
+            return ApplyRandomModifiers(weapon);
         }
 
         public static Items GenerateRandomWeapon(int x, int y)
@@ -63,67 +47,32 @@ namespace RPG_GAME.Model
             return GenerateRandomWeapon(new Vec2(x, y));
         }
 
-        private static Items BuildWeaponWithModifiers(
-            string name,
-            string type,
-            int damage,
-            bool isTwoHanded,
-            int strengthBonus,
-            int dexterityBonus,
-            int aggressionBonus,
-            int wisdomBonus,
-            int luckBonus,
-            Tuple<int, int> position)
+        private static Items ApplyRandomModifiers(Items weapon)
         {
-            IWeaponBuildDataSource source = new BaseWeaponBuildDataSource(new WeaponBuildData(
-                name,
-                type,
-                damage,
-                isTwoHanded,
-                strengthBonus,
-                dexterityBonus,
-                aggressionBonus,
-                wisdomBonus,
-                luckBonus,
-                position));
+            Items current = weapon;
 
-            source = ApplyRandomModifiers(source);
-            var data = source.Build();
-
-            return new WeaponItem(
-                data.Name,
-                data.Type,
-                data.Damage,
-                data.IsTwoHanded,
-                data.StrengthBonus,
-                data.DexterityBonus,
-                data.AggressionBonus,
-                wisdomBonus,
-                luckBonus,
-                position);
-        }
-
-        private static IWeaponBuildDataSource ApplyRandomModifiers(IWeaponBuildDataSource source)
-        {
             if (_random.NextDouble() < 0.35)
-                source = new StrongModifierDecorator(source);
+                current = new StrongModifierDecorator(current);
 
             if (_random.NextDouble() < 0.30)
-                source = new BattleHardenedModifierDecorator(source);
+                current = new BattleHardenedModifierDecorator(current);
 
-            return source;
+            if (_random.NextDouble() < 0.20)
+                current = new UnluckyModifierDecorator(current);
+
+            return current;
         }
 
-        private sealed class BaseWeaponBuildDataSource : IWeaponBuildDataSource
-        {
-            private readonly WeaponBuildData _data;
-
-            public BaseWeaponBuildDataSource(WeaponBuildData data)
-            {
-                _data = data;
-            }
-
-            public WeaponBuildData Build() => _data;
-        }
+        private sealed record WeaponTemplate(
+            string Name,
+            string DisplayType,
+            int Damage,
+            bool IsTwoHanded,
+            IWeaponCategory Category,
+            int StrengthBonus,
+            int DexterityBonus,
+            int AggressionBonus,
+            int WisdomBonus,
+            int LuckBonus);
     }
 }

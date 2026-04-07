@@ -52,6 +52,9 @@ namespace RPG_GAME.App
             }
 
             _dispatcher.HandleCommand(command, _world, _state);
+
+            if (_world.IsExitRequested)
+                Stop();
         }
 
         private void Render()

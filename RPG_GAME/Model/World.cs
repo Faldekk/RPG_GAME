@@ -22,9 +22,10 @@ namespace RPG_GAME.Model
             ["magical"] = new MagicalAttackType()
         };
 
-        public Player Player { get; }
+        public Player Player { get; private set; }
         public Enemy? ActiveEnemy { get; private set; }
         public bool IsCombatActive => ActiveEnemy != null;
+        public bool IsExitRequested { get; private set; }
         public IReadOnlyList<string> MessageLog => _messageLog;
         public IReadOnlyList<BuildInstruction> AvailableInstructions => _availableInstructions;
         public string CurrentMessage { get; private set; } = string.Empty;
@@ -33,9 +34,22 @@ namespace RPG_GAME.Model
             : this(new DungeonGroundsStrategy())
         {
         }
+
         public World(IDungeonStrategy strategy)
         {
             _tiles = new Tile[Height, Width];
+            Player = new Player(new Vec2(1, 1));
+            Initialize(strategy);
+        }
+
+        private void Initialize(IDungeonStrategy strategy)
+        {
+            _messageLog.Clear();
+            _availableInstructions.Clear();
+            CurrentMessage = string.Empty;
+            ActiveEnemy = null;
+            IsExitRequested = false;
+
             Player = new Player(new Vec2(1, 1));
 
             var context = strategy.Build(_tiles, Width, Height);
@@ -486,13 +500,15 @@ namespace RPG_GAME.Model
 
             if (result.EnemyDefeated)
             {
+                var defeatedPos = ActiveEnemy.Position;
                 RemoveEnemyFromMap(ActiveEnemy);
+                SpawnVictoryLoot(defeatedPos);
                 ActiveEnemy = null;
                 AddMessage("Enemy removed from map.");
             }
 
             if (result.PlayerDefeated)
-                AddMessage("");
+                AddMessage("You died. Game over.");
 
             return true;
         }
@@ -518,23 +534,63 @@ namespace RPG_GAME.Model
                 _tiles[pos.Y, pos.X].Enemy = null;
         }
 
+        private void SpawnVictoryLoot(Vec2 center)
+        {
+            var candidates = new List<Vec2>();
+
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int x = center.X + dx;
+                    int y = center.Y + dy;
+
+                    if (x < 1 || x >= Width - 1 || y < 1 || y >= Height - 1)
+                        continue;
+
+                    if (_tiles[y, x].IsWall || _tiles[y, x].Enemy != null || _tiles[y, x].Item != null)
+                        continue;
+
+                    candidates.Add(new Vec2(x, y));
+                }
+            }
+
+            if (candidates.Count == 0)
+                return;
+
+            PlaceLoot(candidates, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(6, 16)));
+            PlaceLoot(candidates, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
+            PlaceLoot(candidates, pos => WeaponGenerator.GenerateRandomWeapon(pos));
+        }
+
+        private void PlaceLoot(List<Vec2> candidates, Func<Vec2, Items> factory)
+        {
+            if (candidates.Count == 0)
+                return;
+
+            int index = Random.Shared.Next(candidates.Count);
+            var pos = candidates[index];
+            candidates.RemoveAt(index);
+
+            _tiles[pos.Y, pos.X].Item = factory(pos);
+        }
+
         public Items? CombineWeapons(Items weapon1, Items weapon2)
         {
-            if (weapon1 is not WeaponItem w1 || weapon2 is not WeaponItem w2)
+            if (!weapon1.CanEquip || !weapon2.CanEquip)
             {
                 AddMessage("Can only combine two weapons.");
                 return null;
             }
 
-            var combinedName = $"{w1.Name} & {w2.Name}";
-            var combinedValue = w1.Value + w2.Value;
-            var combinedDamage = w1.Value + w2.Value;
+            var combinedName = $"{weapon1.Name} & {weapon2.Name}";
+            var combinedValue = weapon1.Value + weapon2.Value;
 
-            var strengthBonus = GetStatBonus(w1, "Strength") + GetStatBonus(w2, "Strength");
-            var dexterityBonus = GetStatBonus(w1, "Dexterity") + GetStatBonus(w2, "Dexterity");
-            var aggressionBonus = GetStatBonus(w1, "Agression") + GetStatBonus(w2, "Agression");
-            var wisdomBonus = GetStatBonus(w1, "Wisdom") + GetStatBonus(w2, "Wisdom");
-            var luckBonus = GetStatBonus(w1, "Luck") + GetStatBonus(w2, "Luck");
+            var strengthBonus = GetStatBonus(weapon1, "Strength") + GetStatBonus(weapon2, "Strength");
+            var dexterityBonus = GetStatBonus(weapon1, "Dexterity") + GetStatBonus(weapon2, "Dexterity");
+            var aggressionBonus = GetStatBonus(weapon1, "Agression") + GetStatBonus(weapon2, "Agression");
+            var wisdomBonus = GetStatBonus(weapon1, "Wisdom") + GetStatBonus(weapon2, "Wisdom");
+            var luckBonus = GetStatBonus(weapon1, "Luck") + GetStatBonus(weapon2, "Luck");
 
             var combined = new WeaponItem(
                 combinedName,
@@ -545,24 +601,25 @@ namespace RPG_GAME.Model
                 dexterityBonus,
                 aggressionBonus,
                 wisdomBonus,
-                luckBonus
+                luckBonus,
+                weapon1.GetWeaponCategory()
             );
 
             AddMessage($"Combined into: {combined.Name} (DMG: {combined.Value})");
             return combined;
         }
 
-        private int GetStatBonus(WeaponItem weapon, string statName)
+        private int GetStatBonus(Items weapon, string statName)
         {
             var stats = new PlayerStats();
             weapon.ApplyEquipBonuses(stats);
-            
+
             return statName switch
             {
                 "Strength" => stats.Strength - 10,
                 "Dexterity" => stats.Dexterity - 10,
                 "Agression" => stats.Aggression - 25,
-                "Wisdom" => stats.Wisdom - 0,
+                "Wisdom" => stats.Wisdom,
                 "Luck" => stats.Luck - 50,
                 _ => 0
             };
@@ -576,10 +633,12 @@ namespace RPG_GAME.Model
 
         public void Stop()
         {
+            IsExitRequested = true;
         }
 
         public void Respawn()
         {
+            Initialize(new DungeonGroundsStrategy());
         }
     }
 }

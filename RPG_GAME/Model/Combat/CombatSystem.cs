@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace RPG_GAME.Model.Combat
 {
@@ -64,6 +63,8 @@ namespace RPG_GAME.Model.Combat
 
     public sealed class HeavyWeaponCategory : IWeaponCategory
     {
+        public static HeavyWeaponCategory Instance { get; } = new();
+        private HeavyWeaponCategory() { }
         public string Name => "Heavy";
 
         public int CalculateDamage(Items item, PlayerStats stats, IAttackType attackType)
@@ -80,6 +81,8 @@ namespace RPG_GAME.Model.Combat
 
     public sealed class LightWeaponCategory : IWeaponCategory
     {
+        public static LightWeaponCategory Instance { get; } = new();
+        private LightWeaponCategory() { }
         public string Name => "Light";
 
         public int CalculateDamage(Items item, PlayerStats stats, IAttackType attackType)
@@ -96,6 +99,8 @@ namespace RPG_GAME.Model.Combat
 
     public sealed class MagicalWeaponCategory : IWeaponCategory
     {
+        public static MagicalWeaponCategory Instance { get; } = new();
+        private MagicalWeaponCategory() { }
         public string Name => "Magical";
 
         public int CalculateDamage(Items item, PlayerStats stats, IAttackType attackType)
@@ -112,6 +117,8 @@ namespace RPG_GAME.Model.Combat
 
     public sealed class OtherWeaponCategory : IWeaponCategory
     {
+        public static OtherWeaponCategory Instance { get; } = new();
+        private OtherWeaponCategory() { }
         public string Name => "Other";
 
         public int CalculateDamage(Items item, PlayerStats stats, IAttackType attackType)
@@ -125,84 +132,11 @@ namespace RPG_GAME.Model.Combat
         }
     }
 
-    public interface IWeaponCategoryRule
-    {
-        bool Matches(Items? item);
-        IWeaponCategory Category { get; }
-    }
-
-    public sealed class NullWeaponRule : IWeaponCategoryRule
-    {
-        public IWeaponCategory Category { get; } = new OtherWeaponCategory();
-        public bool Matches(Items? item) => item == null;
-    }
-
-    public sealed class MagicalWeaponRule : IWeaponCategoryRule
-    {
-        public IWeaponCategory Category { get; } = new MagicalWeaponCategory();
-
-        public bool Matches(Items? item)
-        {
-            return item != null && item.Type.Equals("Magic", StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
-    public sealed class LightWeaponRule : IWeaponCategoryRule
-    {
-        public IWeaponCategory Category { get; } = new LightWeaponCategory();
-
-        public bool Matches(Items? item)
-        {
-            if (item == null)
-                return false;
-
-            return item.Name.Contains("Dagger", StringComparison.OrdinalIgnoreCase)
-                   || item.Name.Contains("Knife", StringComparison.OrdinalIgnoreCase)
-                   || item.Name.Contains("Rapier", StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
-    public sealed class HeavyWeaponRule : IWeaponCategoryRule
-    {
-        public IWeaponCategory Category { get; } = new HeavyWeaponCategory();
-
-        public bool Matches(Items? item)
-        {
-            return item != null && item.Type.Equals("Melee", StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
-    public sealed class FallbackWeaponRule : IWeaponCategoryRule
-    {
-        public IWeaponCategory Category { get; } = new OtherWeaponCategory();
-        public bool Matches(Items? item) => true;
-    }
-
     public sealed class WeaponCategoryResolver
     {
-        private readonly IReadOnlyList<IWeaponCategoryRule> _rules;
-
-        public WeaponCategoryResolver()
-        {
-            _rules = new List<IWeaponCategoryRule>
-            {
-                new NullWeaponRule(),
-                new MagicalWeaponRule(),
-                new LightWeaponRule(),
-                new HeavyWeaponRule(),
-                new FallbackWeaponRule()
-            };
-        }
-
         public IWeaponCategory Resolve(Items? item)
         {
-            foreach (var rule in _rules)
-            {
-                if (rule.Matches(item))
-                    return rule.Category;
-            }
-
-            return new OtherWeaponCategory();
+            return item?.GetWeaponCategory() ?? OtherWeaponCategory.Instance;
         }
     }
 

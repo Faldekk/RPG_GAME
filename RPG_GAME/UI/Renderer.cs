@@ -129,11 +129,11 @@ namespace RPG_GAME.UI
 
                     string marker = i == selectedInventoryIndex ? ">" : " ";
                     _buffer.PutString(row++, 2, $"{marker} {i + 1}. [{item.MapCharacter}] {item.Name}");
-                    if (item.Type == "Melee" || item.Type == "Magic")
+                    if (item.CanEquip)
                     {
                         _buffer.PutString(row++, 4, $"DMG: {item.Value}  DUR: {item.Durability}");
                     }
-                    else if (item.Value > 0 && item.Type != "Heal")
+                    else if (item.Value > 0 && !item.IsHeal)
                     {
                         _buffer.PutString(row++, 4, $"Value: {item.Value}");
                     }
@@ -340,12 +340,12 @@ namespace RPG_GAME.UI
             _buffer.PutString(row++, col, "Available weapons in inventory:");
             row++;
 
-            var weapons = new System.Collections.Generic.List<WeaponItem>();
+            var weapons = new System.Collections.Generic.List<Items>();
             for (int i = 0; i < world.Player.Inventory.Count(); i++)
             {
                 var item = world.Player.Inventory.GetItem(i);
-                if (item is WeaponItem weapon)
-                    weapons.Add(weapon);
+                if (item != null && item.CanEquip)
+                    weapons.Add(item);
             }
 
             if (weapons.Count == 0)
@@ -355,10 +355,11 @@ namespace RPG_GAME.UI
                 return;
             }
 
+            int selected = craftingFirstSelection < 0 ? 0 : craftingFirstSelection;
             for (int i = 0; i < weapons.Count; i++)
             {
                 var weapon = weapons[i];
-                string marker = i == craftingFirstSelection ? ">>> " : "    ";
+                string marker = i == selected ? ">>> " : "    ";
                 _buffer.PutString(row++, col, $"{marker}[{i + 1}] {weapon.Name} (DMG: {weapon.Value})");
             }
 

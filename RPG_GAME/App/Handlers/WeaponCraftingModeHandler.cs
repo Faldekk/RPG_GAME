@@ -1,5 +1,5 @@
-using RPG_GAME.Model;
 using System.Collections.Generic;
+using RPG_GAME.Model;
 
 namespace RPG_GAME.App
 {
@@ -39,14 +39,14 @@ namespace RPG_GAME.App
             }
         }
 
-        private List<WeaponItem> GetWeaponsFromInventory(World world)
+        private List<Items> GetWeaponsFromInventory(World world)
         {
-            var weapons = new List<WeaponItem>();
+            var weapons = new List<Items>();
             for (int i = 0; i < world.Player.Inventory.Count(); i++)
             {
                 var item = world.Player.Inventory.GetItem(i);
-                if (item is WeaponItem weapon)
-                    weapons.Add(weapon);
+                if (item != null && item.CanEquip)
+                    weapons.Add(item);
             }
             return weapons;
         }
@@ -63,7 +63,7 @@ namespace RPG_GAME.App
                 state.CraftingFirstSelection = 0;
         }
 
-        private void HandleWeaponCombine(World world, GameState state, List<WeaponItem> weapons)
+        private void HandleWeaponCombine(World world, GameState state, List<Items> weapons)
         {
             if (weapons.Count < 2)
             {
@@ -71,8 +71,9 @@ namespace RPG_GAME.App
                 return;
             }
 
-            var weapon1 = weapons[state.CraftingFirstSelection];
-            var weapon2 = weapons[(state.CraftingFirstSelection + 1) % weapons.Count];
+            int firstIndex = state.CraftingFirstSelection < 0 ? 0 : state.CraftingFirstSelection;
+            var weapon1 = weapons[firstIndex % weapons.Count];
+            var weapon2 = weapons[(firstIndex + 1) % weapons.Count];
 
             var combined = world.CombineWeapons(weapon1, weapon2);
             if (combined != null)

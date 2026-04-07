@@ -1,17 +1,18 @@
 using System;
+using RPG_GAME.Model.Combat;
 
 namespace RPG_GAME.Model
 {
     public abstract class Items : IEquippable
     {
-        public string Name { get; protected set; }
-        public string Type { get; protected set; }
-        public int Value { get; protected set; }
+        public virtual string Name { get; protected set; }
+        public virtual string Type { get; protected set; }
+        public virtual int Value { get; protected set; }
         public virtual bool IsTwoHanded => false;
         public virtual bool IsHeal => false;
-        public Tuple<int, int>? Position { get; set; }
+        public virtual Tuple<int, int>? Position { get; set; }
         public int Count;
-        public int Durability { get; protected set; }
+        public virtual int Durability { get; protected set; }
         public virtual char MapCharacter => 'x';
         public virtual bool CanEquip => false;
 
@@ -25,33 +26,35 @@ namespace RPG_GAME.Model
             Durability = 100;
         }
 
-
         public virtual void Use()
         {
             if (Durability > 0)
                 Durability -= 5;
         }
 
-
         public virtual bool TryCollect(Player player, out string message)
         {
             message = string.Empty;
             return false;
         }
+
         public virtual bool TryUse(Player player, out string message)
         {
             message = "Item cannot be used.";
             return false;
         }
 
-
         public virtual void ApplyEquipBonuses(PlayerStats stats)
         {
         }
 
-
         public virtual void RemoveEquipBonuses(PlayerStats stats)
         {
+        }
+
+        public virtual IWeaponCategory GetWeaponCategory()
+        {
+            return OtherWeaponCategory.Instance;
         }
     }
 
@@ -63,6 +66,7 @@ namespace RPG_GAME.Model
         private readonly int _aggressionBonus;
         private readonly int _wisdomBonus;
         private readonly int _luckBonus;
+        private readonly IWeaponCategory _weaponCategory;
 
         public override bool IsTwoHanded => _isTwoHanded;
         public override bool CanEquip => true;
@@ -78,6 +82,7 @@ namespace RPG_GAME.Model
             int aggressionBonus,
             int wisdomBonus,
             int luckBonus,
+            IWeaponCategory weaponCategory,
             Tuple<int, int>? position = null)
             : base(name, type, value, position)
         {
@@ -87,6 +92,7 @@ namespace RPG_GAME.Model
             _aggressionBonus = aggressionBonus;
             _wisdomBonus = wisdomBonus;
             _luckBonus = luckBonus;
+            _weaponCategory = weaponCategory;
         }
 
         public override void ApplyEquipBonuses(PlayerStats stats)
@@ -105,6 +111,11 @@ namespace RPG_GAME.Model
             stats.ModifyStat("Agression", -_aggressionBonus);
             stats.ModifyStat("Wisdom", -_wisdomBonus);
             stats.ModifyStat("Luck", -_luckBonus);
+        }
+
+        public override IWeaponCategory GetWeaponCategory()
+        {
+            return _weaponCategory;
         }
     }
 
