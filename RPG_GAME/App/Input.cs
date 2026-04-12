@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using RPG_GAME.UI;
 
@@ -24,6 +24,15 @@ namespace RPG_GAME.App
         InventoryEquip,
         InventoryDrop,
         InventoryUse,
+        InventoryCraftArmor,
+        CraftingSelectFirst,
+        CraftingSelectSecond,
+        CraftingCombine,
+        CraftingCancel,
+        CombatNormalAttack,
+        CombatStealthAttack,
+        CombatMagicalAttack,
+        DeathRespawn,
         CloseInventory,
         Quit
     }
@@ -60,7 +69,35 @@ namespace RPG_GAME.App
             [ConsoleKey.E] = InputCommand.InventoryEquip,
             [ConsoleKey.D] = InputCommand.InventoryDrop,
             [ConsoleKey.U] = InputCommand.InventoryUse,
+            [ConsoleKey.C] = InputCommand.InventoryCraftArmor,
             [ConsoleKey.Escape] = InputCommand.CloseInventory
+        };
+
+        private static readonly Dictionary<ConsoleKey, InputCommand> _combatBindings = new()
+        {
+            [ConsoleKey.D1] = InputCommand.CombatNormalAttack,
+            [ConsoleKey.NumPad1] = InputCommand.CombatNormalAttack,
+            [ConsoleKey.D2] = InputCommand.CombatStealthAttack,
+            [ConsoleKey.NumPad2] = InputCommand.CombatStealthAttack,
+            [ConsoleKey.D3] = InputCommand.CombatMagicalAttack,
+            [ConsoleKey.NumPad3] = InputCommand.CombatMagicalAttack,
+            [ConsoleKey.Escape] = InputCommand.Quit
+        };
+
+        private static readonly Dictionary<ConsoleKey, InputCommand> _deathBindings = new()
+        {
+            [ConsoleKey.R] = InputCommand.DeathRespawn,
+            [ConsoleKey.Q] = InputCommand.Quit
+        };
+
+        private static readonly Dictionary<ConsoleKey, InputCommand> _craftingBindings = new()
+        {
+            [ConsoleKey.W] = InputCommand.CraftingSelectFirst,
+            [ConsoleKey.UpArrow] = InputCommand.CraftingSelectFirst,
+            [ConsoleKey.S] = InputCommand.CraftingSelectSecond,
+            [ConsoleKey.DownArrow] = InputCommand.CraftingSelectSecond,
+            [ConsoleKey.E] = InputCommand.CraftingCombine,
+            [ConsoleKey.Escape] = InputCommand.CraftingCancel
         };
 
         public InputCommand ReadCommand(GameMode mode)
@@ -68,8 +105,25 @@ namespace RPG_GAME.App
             if (!ConsoleHost.TryReadKey(out var key))
                 return InputCommand.None;
 
-            var bindings = ReferenceEquals(mode, GameMode.Inventory) ? _inventoryBindings : _normalBindings;
+            var bindings = ResolveBindings(mode);
             return bindings.TryGetValue(key, out var command) ? command : InputCommand.Unknown;
+        }
+
+        private static Dictionary<ConsoleKey, InputCommand> ResolveBindings(GameMode mode)
+        {
+            if (ReferenceEquals(mode, GameMode.Inventory))
+                return _inventoryBindings;
+
+            if (ReferenceEquals(mode, GameMode.Combat))
+                return _combatBindings;
+
+            if (ReferenceEquals(mode, GameMode.Death))
+                return _deathBindings;
+
+            if (ReferenceEquals(mode, GameMode.WeaponCrafting))
+                return _craftingBindings;
+
+            return _normalBindings;
         }
     }
 }

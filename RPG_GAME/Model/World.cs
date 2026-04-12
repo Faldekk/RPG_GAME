@@ -1,6 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using RPG_GAME.Model.Combat;
 using RPG_GAME.Model.DungeonBuilding;
+using RPG_GAME.UI;
 
 namespace RPG_GAME.Model
 {
@@ -10,23 +12,44 @@ namespace RPG_GAME.Model
         public const int Width = 40;
 
         private readonly Tile[,] _tiles;
-        private readonly List<string> _messageLog = new();  
-        private readonly List<BuildInstruction> _availableInstructions = new();  
+        private readonly List<string> _messageLog = new();
+        private readonly List<BuildInstruction> _availableInstructions = new();
+        private readonly CombatEngine _combatEngine = new();
+        private readonly Dictionary<string, IAttackType> _attackTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["normal"] = new NormalAttackType(),
+            ["stealth"] = new StealthAttackType(),
+            ["magical"] = new MagicalAttackType()
+        };
 
-        public Player Player { get; }
+        public Player Player { get; private set; }
+        public Enemy? ActiveEnemy { get; private set; }
+        public bool IsCombatActive => ActiveEnemy != null;
+        public bool IsExitRequested { get; private set; }
         public IReadOnlyList<string> MessageLog => _messageLog;
         public IReadOnlyList<BuildInstruction> AvailableInstructions => _availableInstructions;
-        public string CurrentMessage { get; private set; } = string.Empty; 
+        public string CurrentMessage { get; private set; } = string.Empty;
 
         public World()
             : this(new DungeonGroundsStrategy())
         {
         }
 
-        // Zbuduj świat - najpierw mapa, potem gracz, potem monety i instrukcje
         public World(IDungeonStrategy strategy)
         {
             _tiles = new Tile[Height, Width];
+            Player = new Player(new Vec2(1, 1));
+            Initialize(strategy);
+        }
+
+        private void Initialize(IDungeonStrategy strategy)
+        {
+            _messageLog.Clear();
+            _availableInstructions.Clear();
+            CurrentMessage = string.Empty;
+            ActiveEnemy = null;
+            IsExitRequested = false;
+
             Player = new Player(new Vec2(1, 1));
 
             var context = strategy.Build(_tiles, Width, Height);
@@ -34,8 +57,6 @@ namespace RPG_GAME.Model
             SpawnCurrencyItems(2, 2);  // Dla smaku
             BuildInstructionList(context);
         }
-
-        // Dodaj wiadomość do dziennika - ostatnia wiadomość się wyświetla
         public void AddMessage(string message)
         {
             if (string.IsNullOrWhiteSpace(message))
@@ -45,12 +66,9 @@ namespace RPG_GAME.Model
             _messageLog.Add(message);
 
             const int maxMessages = 6;
-            // Nie trzymaj zbyt dużo - to zajmuje pamięć
             if (_messageLog.Count > maxMessages)
                 _messageLog.RemoveAt(0);
         }
-
-        // Zbierz instrukcje z budowania i dodaj UI-owe
         private void BuildInstructionList(BuildContext context)
         {
             _availableInstructions.Clear();
@@ -59,6 +77,7 @@ namespace RPG_GAME.Model
 
             AddUniqueInstruction(ControlsConfig.OpenInventory);
             AddUniqueInstruction(ControlsConfig.CloseInventory);
+            AddUniqueInstruction(ControlsConfig.InventoryCraftArmor);
         }
         private void AddUniqueInstruction(BuildInstruction instruction)
         {
@@ -98,7 +117,7 @@ namespace RPG_GAME.Model
             {
                 for (int x = 1; x < Width - 1; x++)
                 {
-                    if (!_tiles[y, x].IsWall && _tiles[y, x].Item == null)
+                    if (!_tiles[y, x].IsWall && _tiles[y, x].Item == null && _tiles[y, x].Enemy == null)
                         availableTiles.Add((y, x));
                 }
             }
@@ -136,8 +155,15 @@ namespace RPG_GAME.Model
             if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
                 return false;
 
-            if (_tiles[next.Y, next.X].IsWall)
+            var targetTile = _tiles[next.Y, next.X];
+            if (targetTile.IsWall)
                 return false;
+
+            if (targetTile.Enemy != null)
+            {
+                StartCombat(targetTile.Enemy);
+                return true;
+            }
 
             Player.MoveTo(next);
             return true;
@@ -351,6 +377,12 @@ namespace RPG_GAME.Model
                 return false;
             }
 
+            if (tile.Enemy != null)
+            {
+                AddMessage("Cannot drop during enemy occupation.");
+                return false;
+            }
+
             var item = Player.Inventory.TakeFromBackpack(index);
             if (item == null)
             {
@@ -393,6 +425,12 @@ namespace RPG_GAME.Model
                 return false;
             }
 
+            if (tile.Enemy != null)
+            {
+                AddMessage("Cannot drop during enemy occupation.");
+                return false;
+            }
+
             var item = Player.Inventory.UnequipItem(handIndex);
             if (item == null)
             {
@@ -416,6 +454,192 @@ namespace RPG_GAME.Model
         private void RemoveWeaponBonuses(Items item)
         {
             item.RemoveEquipBonuses(Player.Stats);
+        }
+
+        public bool CraftArmorFromJunk()
+        {
+            var junkIndexes = new List<int>();
+            for (int i = 0; i < Player.Inventory.Count(); i++)
+            {
+                var item = Player.Inventory.GetItem(i);
+                if (item != null && item.Type.Equals("Junk", StringComparison.OrdinalIgnoreCase))
+                    junkIndexes.Add(i);
+            }
+
+            if (junkIndexes.Count < 2)
+            {
+                AddMessage("Need 2 junk items to craft armor.");
+                return false;
+            }
+
+            junkIndexes.Sort((a, b) => b.CompareTo(a));
+            Player.Inventory.RemoveFromBackpack(junkIndexes[0]);
+            Player.Inventory.RemoveFromBackpack(junkIndexes[1]);
+            Player.Stats.Armor += 2;
+            AddMessage($"Crafted armor from junk. Armor is now {Player.Stats.Armor}.");
+            return true;
+        }
+
+        public bool TryCombatRound(string attackKey)
+        {
+            if (ActiveEnemy == null)
+            {
+                AddMessage("No active enemy.");
+                return false;
+            }
+
+            if (!_attackTypes.TryGetValue(attackKey, out var attackType))
+            {
+                AddMessage("Unknown attack style.");
+                return false;
+            }
+
+            var weapon = ResolveActiveWeapon();
+            var result = _combatEngine.ExecuteRound(Player, ActiveEnemy, attackType, weapon);
+            AddMessage(result.Summary);
+
+            if (result.EnemyDefeated)
+            {
+                var defeatedPos = ActiveEnemy.Position;
+                RemoveEnemyFromMap(ActiveEnemy);
+                SpawnVictoryLoot(defeatedPos);
+                Player.Heal(50);
+                ActiveEnemy = null;
+                AddMessage("Enemy removed from map.");
+            }
+
+            if (result.PlayerDefeated)
+                AddMessage("You died. Game over.");
+
+            return true;
+        }
+
+        private Items? ResolveActiveWeapon()
+        {
+            if (Player.Inventory.LeftHand != null)
+                return Player.Inventory.LeftHand;
+
+            return Player.Inventory.RightHand;
+        }
+
+        private void StartCombat(Enemy enemy)
+        {
+            ActiveEnemy = enemy;
+            AddMessage($"Encounter: {enemy.Name} | HP: {enemy.Health} | ATK: {enemy.AttackMin}-{enemy.AttackMax} | ARM: {enemy.Armor}");
+        }
+
+        private void RemoveEnemyFromMap(Enemy enemy)
+        {
+            var pos = enemy.Position;
+            if (pos.X >= 0 && pos.X < Width && pos.Y >= 0 && pos.Y < Height)
+                _tiles[pos.Y, pos.X].Enemy = null;
+        }
+
+        private void SpawnVictoryLoot(Vec2 center)
+        {
+            var candidates = new List<Vec2>();
+
+            for (int dy = -2; dy <= 2; dy++)
+            {
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    int x = center.X + dx;
+                    int y = center.Y + dy;
+
+                    if (x < 1 || x >= Width - 1 || y < 1 || y >= Height - 1)
+                        continue;
+
+                    if (_tiles[y, x].IsWall || _tiles[y, x].Enemy != null || _tiles[y, x].Item != null)
+                        continue;
+
+                    candidates.Add(new Vec2(x, y));
+                }
+            }
+
+            if (candidates.Count == 0)
+                return;
+
+            PlaceLoot(candidates, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(6, 16)));
+            PlaceLoot(candidates, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
+            PlaceLoot(candidates, pos => WeaponGenerator.GenerateRandomWeapon(pos));
+        }
+
+        private void PlaceLoot(List<Vec2> candidates, Func<Vec2, Items> factory)
+        {
+            if (candidates.Count == 0)
+                return;
+
+            int index = Random.Shared.Next(candidates.Count);
+            var pos = candidates[index];
+            candidates.RemoveAt(index);
+
+            _tiles[pos.Y, pos.X].Item = factory(pos);
+        }
+
+        public Items? CombineWeapons(Items weapon1, Items weapon2)
+        {
+            if (!weapon1.CanEquip || !weapon2.CanEquip)
+            {
+                AddMessage("Can only combine two weapons.");
+                return null;
+            }
+
+            var combinedName = $"{weapon1.Name} & {weapon2.Name}";
+            var combinedValue = weapon1.Value + weapon2.Value;
+
+            var strengthBonus = GetStatBonus(weapon1, "Strength") + GetStatBonus(weapon2, "Strength");
+            var dexterityBonus = GetStatBonus(weapon1, "Dexterity") + GetStatBonus(weapon2, "Dexterity");
+            var aggressionBonus = GetStatBonus(weapon1, "Agression") + GetStatBonus(weapon2, "Agression");
+            var wisdomBonus = GetStatBonus(weapon1, "Wisdom") + GetStatBonus(weapon2, "Wisdom");
+            var luckBonus = GetStatBonus(weapon1, "Luck") + GetStatBonus(weapon2, "Luck");
+
+            var combined = new WeaponItem(
+                combinedName,
+                "Combined",
+                combinedValue,
+                false,
+                strengthBonus,
+                dexterityBonus,
+                aggressionBonus,
+                wisdomBonus,
+                luckBonus,
+                weapon1.GetWeaponCategory()
+            );
+
+            AddMessage($"Combined into: {combined.Name} (DMG: {combined.Value})");
+            return combined;
+        }
+
+        private int GetStatBonus(Items weapon, string statName)
+        {
+            var stats = new PlayerStats();
+            weapon.ApplyEquipBonuses(stats);
+
+            return statName switch
+            {
+                "Strength" => stats.Strength - 10,
+                "Dexterity" => stats.Dexterity - 10,
+                "Agression" => stats.Aggression - 25,
+                "Wisdom" => stats.Wisdom,
+                "Luck" => stats.Luck - 50,
+                _ => 0
+            };
+        }
+
+        public bool IsAtCraftingStation()
+        {
+            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            return tile.IsCraftingStation;
+        }
+
+        public void Stop()
+        {
+            IsExitRequested = true;
+        }
+
+        public void Respawn()
+        {
+            Initialize(new DungeonGroundsStrategy());
         }
     }
 }

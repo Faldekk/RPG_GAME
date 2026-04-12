@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RPG_GAME.Model.Map;
+using RPG_GAME.UI;
 
 namespace RPG_GAME.Model.DungeonBuilding
 {
