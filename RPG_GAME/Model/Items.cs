@@ -54,7 +54,7 @@ namespace RPG_GAME.Model
 
         public virtual IWeaponCategory GetWeaponCategory()
         {
-            return OtherWeaponCategory.Instance;
+            return NoWeaponCategory.Instance;
         }
     }
 
@@ -66,11 +66,11 @@ namespace RPG_GAME.Model
         private readonly int _aggressionBonus;
         private readonly int _wisdomBonus;
         private readonly int _luckBonus;
-        private readonly IWeaponCategory _weaponCategory;
 
         public override bool IsTwoHanded => _isTwoHanded;
         public override bool CanEquip => true;
         public override char MapCharacter => 'X';
+        public IWeaponCategory Category { get; }
 
         public WeaponItem(
             string name,
@@ -82,7 +82,7 @@ namespace RPG_GAME.Model
             int aggressionBonus,
             int wisdomBonus,
             int luckBonus,
-            IWeaponCategory weaponCategory,
+            IWeaponCategory category,
             Tuple<int, int>? position = null)
             : base(name, type, value, position)
         {
@@ -92,7 +92,7 @@ namespace RPG_GAME.Model
             _aggressionBonus = aggressionBonus;
             _wisdomBonus = wisdomBonus;
             _luckBonus = luckBonus;
-            _weaponCategory = weaponCategory;
+            Category = category;
         }
 
         public override void ApplyEquipBonuses(PlayerStats stats)
@@ -115,7 +115,7 @@ namespace RPG_GAME.Model
 
         public override IWeaponCategory GetWeaponCategory()
         {
-            return _weaponCategory;
+            return Category;
         }
     }
 

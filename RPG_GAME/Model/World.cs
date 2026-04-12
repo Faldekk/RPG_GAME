@@ -14,7 +14,7 @@ namespace RPG_GAME.Model
         private readonly Tile[,] _tiles;
         private readonly List<string> _messageLog = new();
         private readonly List<BuildInstruction> _availableInstructions = new();
-        private readonly CombatEngine _combatEngine = new(new WeaponCategoryResolver());
+        private readonly CombatEngine _combatEngine = new();
         private readonly Dictionary<string, IAttackType> _attackTypes = new(StringComparer.OrdinalIgnoreCase)
         {
             ["normal"] = new NormalAttackType(),
@@ -538,9 +538,9 @@ namespace RPG_GAME.Model
         {
             var candidates = new List<Vec2>();
 
-            for (int dy = -1; dy <= 1; dy++)
+            for (int dy = -2; dy <= 2; dy++)
             {
-                for (int dx = -1; dx <= 1; dx++)
+                for (int dx = -2; dx <= 2; dx++)
                 {
                     int x = center.X + dx;
                     int y = center.Y + dy;
