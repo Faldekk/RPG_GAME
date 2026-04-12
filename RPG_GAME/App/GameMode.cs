@@ -1,6 +1,5 @@
 namespace RPG_GAME.App
 {
-    //tryby gry 
     public sealed class GameMode
     {
         public static readonly GameMode Normal = new("Normal");
