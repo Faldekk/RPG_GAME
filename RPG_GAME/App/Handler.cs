@@ -20,10 +20,6 @@ namespace RPG_GAME.App
         protected abstract bool Process(InputCommand cmd, World world, Game? game);
     }
 
-<<<<<<< HEAD
-   
-=======
->>>>>>> c96ec9f57eb768118669ed627b482fd00ba86918
     public class MoveUpHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game? game)
@@ -34,10 +30,6 @@ namespace RPG_GAME.App
         }
     }
 
-<<<<<<< HEAD
-    
-=======
->>>>>>> c96ec9f57eb768118669ed627b482fd00ba86918
     public class MoveDownHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game? game)
@@ -48,10 +40,6 @@ namespace RPG_GAME.App
         }
     }
 
-<<<<<<< HEAD
-    
-=======
->>>>>>> c96ec9f57eb768118669ed627b482fd00ba86918
     public class MoveLeftHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game? game)
@@ -62,10 +50,6 @@ namespace RPG_GAME.App
         }
     }
 
-<<<<<<< HEAD
- 
-=======
->>>>>>> c96ec9f57eb768118669ed627b482fd00ba86918
     public class MoveRightHandler : CommandHandler
     {
         protected override bool Process(InputCommand cmd, World world, Game? game)

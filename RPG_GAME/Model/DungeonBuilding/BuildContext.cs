@@ -27,11 +27,7 @@ namespace RPG_GAME.Model.DungeonBuilding
         {
             _instructions.Add(new BuildInstruction(key, description));
         }
-<<<<<<< HEAD
-=======
 
->>>>>>> c96ec9f57eb768118669ed627b482fd00ba86918
-        
         public void AddInstruction(BuildInstruction instruction)
         {
             _instructions.Add(instruction);
