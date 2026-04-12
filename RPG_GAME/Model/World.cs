@@ -503,6 +503,7 @@ namespace RPG_GAME.Model
                 var defeatedPos = ActiveEnemy.Position;
                 RemoveEnemyFromMap(ActiveEnemy);
                 SpawnVictoryLoot(defeatedPos);
+                Player.Heal(50);
                 ActiveEnemy = null;
                 AddMessage("Enemy removed from map.");
             }

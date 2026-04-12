@@ -12,9 +12,6 @@ namespace RPG_GAME.Model.Combat
     {
         string Name { get; }
 
-        int ModifyDamage(IWeaponCategory category, int baseDamage);
-        int ModifyDefense(IWeaponCategory category, PlayerStats stats);
-
         int ModifyDamage(HeavyWeaponCategory category, int baseDamage);
         int ModifyDamage(LightWeaponCategory category, int baseDamage);
         int ModifyDamage(MagicalWeaponCategory category, int baseDamage);
@@ -109,16 +106,6 @@ namespace RPG_GAME.Model.Combat
     {
         public string Name => "Normal";
 
-        public int ModifyDamage(IWeaponCategory category, int baseDamage)
-        {
-            return baseDamage;
-        }
-
-        public int ModifyDefense(IWeaponCategory category, PlayerStats stats)
-        {
-            return stats.Dexterity;
-        }
-
         public int ModifyDamage(HeavyWeaponCategory category, int baseDamage) => Math.Max(1, baseDamage);
         public int ModifyDamage(LightWeaponCategory category, int baseDamage) => Math.Max(1, baseDamage);
         public int ModifyDamage(MagicalWeaponCategory category, int baseDamage) => 1;
@@ -134,16 +121,6 @@ namespace RPG_GAME.Model.Combat
     {
         public string Name => "Stealth";
 
-        public int ModifyDamage(IWeaponCategory category, int baseDamage)
-        {
-            return baseDamage;
-        }
-
-        public int ModifyDefense(IWeaponCategory category, PlayerStats stats)
-        {
-            return 0;
-        }
-
         public int ModifyDamage(HeavyWeaponCategory category, int baseDamage) => Math.Max(1, baseDamage / 2);
         public int ModifyDamage(LightWeaponCategory category, int baseDamage) => Math.Max(1, baseDamage * 2);
         public int ModifyDamage(MagicalWeaponCategory category, int baseDamage) => 1;
@@ -158,16 +135,6 @@ namespace RPG_GAME.Model.Combat
     public sealed class MagicalAttackType : IAttackType
     {
         public string Name => "Magical";
-
-        public int ModifyDamage(IWeaponCategory category, int baseDamage)
-        {
-            return 1;
-        }
-
-        public int ModifyDefense(IWeaponCategory category, PlayerStats stats)
-        {
-            return stats.Luck;
-        }
 
         public int ModifyDamage(HeavyWeaponCategory category, int baseDamage) => 1;
         public int ModifyDamage(LightWeaponCategory category, int baseDamage) => 1;
