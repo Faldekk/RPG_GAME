@@ -9,9 +9,9 @@ namespace RPG_GAME.App
         public void ResetForMode(GameMode newMode)
         {
             CurrentMode = newMode;
-            if (newMode == GameMode.WeaponCrafting)
+            if (newMode.Kind == GameModeKind.WeaponCrafting)
                 CraftingFirstSelection = -1;
-            if (newMode == GameMode.Normal || newMode == GameMode.Inventory)
+            if (newMode.Kind == GameModeKind.Normal || newMode.Kind == GameModeKind.Inventory)
                 SelectedInventoryIndex = 0;
         }
     }

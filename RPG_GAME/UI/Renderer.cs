@@ -23,28 +23,26 @@ namespace RPG_GAME.UI
         {
             _buffer.Clear();
 
-            if (ReferenceEquals(mode, GameMode.Inventory))
+            switch (mode.Kind)
             {
-                RenderInventory(world, selectedInventoryIndex);
-            }
-            else if (ReferenceEquals(mode, GameMode.Combat))
-            {
-                RenderCombat(world);
-            }
-            else if (ReferenceEquals(mode, GameMode.Death))
-            {
-                RenderDeath(world);
-            }
-            else if (ReferenceEquals(mode, GameMode.WeaponCrafting))
-            {
-                RenderWeaponCrafting(world, craftingFirstSelection);
-            }
-            else
-            {
-                RenderMap(world);
-                RenderPlayer(world.Player);
-                RenderBottomControls(world);
-                RenderUI(world.Player, world);
+                case GameModeKind.Inventory:
+                    RenderInventory(world, selectedInventoryIndex);
+                    break;
+                case GameModeKind.Combat:
+                    RenderCombat(world);
+                    break;
+                case GameModeKind.Death:
+                    RenderDeath(world);
+                    break;
+                case GameModeKind.WeaponCrafting:
+                    RenderWeaponCrafting(world, craftingFirstSelection);
+                    break;
+                default:
+                    RenderMap(world);
+                    RenderPlayer(world.Player);
+                    RenderBottomControls(world);
+                    RenderUI(world.Player, world);
+                    break;
             }
 
             RenderCurrentMessage(world);

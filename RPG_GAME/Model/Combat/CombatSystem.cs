@@ -191,6 +191,7 @@ namespace RPG_GAME.Model.Combat
 
             int playerDefense = category.CalculateDefense(player.Stats, playerAttackType) + player.Stats.Armor;
             int enemyRawDamage = enemy.RollAttackDamage();
+
             int playerTaken = Math.Max(0, enemyRawDamage - playerDefense);
             player.Stats.TakeDamage(playerTaken);
 

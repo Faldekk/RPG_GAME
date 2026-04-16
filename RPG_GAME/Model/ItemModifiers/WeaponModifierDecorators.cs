@@ -81,7 +81,7 @@ namespace RPG_GAME.Model.ItemModifiers
             return data with
             {
                 Name = $"{data.Name} (Unlucky)",
-                LuckBonus = data.LuckBonus - 4
+                LuckBonus = data.LuckBonus - 5
             };
         }
     }
