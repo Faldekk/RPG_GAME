@@ -103,7 +103,7 @@ namespace RPG_GAME.UI
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
             currentRow = RenderEquipment(player, panelX, currentRow);
-            currentRow = RenderInstructions(world, panelX, currentRow);
+          //  currentRow = RenderInstructions(world, panelX, currentRow);
         }
 
         private void RenderInventory(World world, int selectedInventoryIndex)
