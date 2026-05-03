@@ -10,7 +10,7 @@ namespace RPG_GAME.Model.DungeonBuilding
                 .AddStep(new AddChambersStep(6, 4, 8))
                 .AddStep(new AddPathsStep())
                 .AddStep(new AddItemsStep(6))
-                .AddStep(new AddWeaponsStep(10))
+                .AddStep(new AddWeaponsStep(18))
                 .AddStep(new AddEnemiesStep(7))
                 .AddStep(new AddCraftingStationsStep(2));
 

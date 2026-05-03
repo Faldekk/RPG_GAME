@@ -19,6 +19,7 @@ namespace RPG_GAME.App
         DropLeftHand,
         DropRightHand,
         OpenInventory,
+        OpenJournal,
         InventoryUp,
         InventoryDown,
         InventoryEquip,
@@ -52,6 +53,7 @@ namespace RPG_GAME.App
             [ConsoleKey.E] = InputCommand.Pickup,
             [ConsoleKey.X] = InputCommand.SwapWeapons,
             [ConsoleKey.B] = InputCommand.OpenInventory,
+            [ConsoleKey.J] = InputCommand.OpenJournal,
             [ConsoleKey.D1] = InputCommand.DropLeftHand,
             [ConsoleKey.NumPad1] = InputCommand.DropLeftHand,
             [ConsoleKey.D2] = InputCommand.DropRightHand,
@@ -70,7 +72,8 @@ namespace RPG_GAME.App
             [ConsoleKey.D] = InputCommand.InventoryDrop,
             [ConsoleKey.U] = InputCommand.InventoryUse,
             [ConsoleKey.C] = InputCommand.InventoryCraftArmor,
-            [ConsoleKey.Escape] = InputCommand.CloseInventory
+            [ConsoleKey.Escape] = InputCommand.CloseInventory,
+            [ConsoleKey.J] = InputCommand.OpenJournal
         };
 
         private static readonly Dictionary<ConsoleKey, InputCommand> _combatBindings = new()
@@ -81,13 +84,15 @@ namespace RPG_GAME.App
             [ConsoleKey.NumPad2] = InputCommand.CombatStealthAttack,
             [ConsoleKey.D3] = InputCommand.CombatMagicalAttack,
             [ConsoleKey.NumPad3] = InputCommand.CombatMagicalAttack,
+            [ConsoleKey.J] = InputCommand.OpenJournal,
             [ConsoleKey.Escape] = InputCommand.Quit
         };
 
         private static readonly Dictionary<ConsoleKey, InputCommand> _deathBindings = new()
         {
             [ConsoleKey.R] = InputCommand.DeathRespawn,
-            [ConsoleKey.Q] = InputCommand.Quit
+            [ConsoleKey.Q] = InputCommand.Quit,
+            [ConsoleKey.J] = InputCommand.OpenJournal
         };
 
         private static readonly Dictionary<ConsoleKey, InputCommand> _craftingBindings = new()
@@ -97,6 +102,7 @@ namespace RPG_GAME.App
             [ConsoleKey.S] = InputCommand.CraftingSelectSecond,
             [ConsoleKey.DownArrow] = InputCommand.CraftingSelectSecond,
             [ConsoleKey.E] = InputCommand.CraftingCombine,
+            [ConsoleKey.J] = InputCommand.OpenJournal,
             [ConsoleKey.Escape] = InputCommand.CraftingCancel
         };
 
@@ -111,16 +117,16 @@ namespace RPG_GAME.App
 
         private static Dictionary<ConsoleKey, InputCommand> ResolveBindings(GameMode mode)
         {
-            if (ReferenceEquals(mode, GameMode.Inventory))
+            if (mode == GameMode.Inventory)
                 return _inventoryBindings;
 
-            if (ReferenceEquals(mode, GameMode.Combat))
+            if (mode == GameMode.Combat)
                 return _combatBindings;
 
-            if (ReferenceEquals(mode, GameMode.Death))
+            if (mode == GameMode.Death)
                 return _deathBindings;
 
-            if (ReferenceEquals(mode, GameMode.WeaponCrafting))
+            if (mode == GameMode.WeaponCrafting)
                 return _craftingBindings;
 
             return _normalBindings;

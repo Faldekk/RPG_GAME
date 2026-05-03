@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using RPG_GAME.App;
+using RPG_GAME.App.Logging;
 using RPG_GAME.Model;
 using RPG_GAME.Model.DungeonBuilding;
 
@@ -37,16 +38,100 @@ namespace RPG_GAME.UI
                 case GameModeKind.WeaponCrafting:
                     RenderWeaponCrafting(world, craftingFirstSelection);
                     break;
+                case GameModeKind.Journal:
+                    RenderJournal();
+                    break;
                 default:
                     RenderMap(world);
                     RenderPlayer(world.Player);
                     RenderBottomControls(world);
                     RenderUI(world.Player, world);
+                    RenderRecentLogsBottom();
                     break;
             }
 
             RenderCurrentMessage(world);
             _buffer.Flush();
+        }
+
+        private void RenderRecentLogsBottom()
+        {
+            const int startRow = World.Height + 3;
+            const int maxWidth = 92;
+            int row = startRow;
+
+            var entries = GameLog.RecentEntries;
+            if (entries.Count == 0)
+            {
+                _buffer.PutString(row, 0, "Recent: (no log entries yet)");
+                return;
+            }
+
+            foreach (var entry in entries)
+            {
+                var line = $"Recent: {entry.Timestamp:HH:mm:ss}  {entry.Message}";
+                _buffer.PutString(row++, 0, Truncate(line, maxWidth));
+            }
+        }
+
+        private void RenderJournal()
+        {
+            const int panelX = 2;
+            const int panelWidth = 76;
+            int row = 1;
+
+            PutPanelLine(panelX, row++, panelWidth, "JOURNAL");
+            PutPanelLine(panelX, row++, panelWidth, RepeatChar('-', panelWidth));
+            PutPanelLine(panelX, row++, panelWidth, "All events since game start");
+            row++;
+
+            var entries = GameLog.JournalEntries;
+            if (entries.Count == 0)
+            {
+                PutPanelLine(panelX, row++, panelWidth, "(journal is empty)");
+            }
+            else
+            {
+                foreach (var entry in entries)
+                {
+                    PutPanelLine(panelX, row++, panelWidth, $"• {FormatLogLine(entry)}");
+                }
+            }
+
+            row += 1;
+            PutPanelLine(panelX, row++, panelWidth, "Press [J] to return to the game");
+        }
+
+        private static string FormatLogLine(LogEntry entry)
+        {
+            return $"{entry.Timestamp:HH:mm:ss}  {entry.Message}";
+        }
+
+        private void PutPanelLine(int panelX, int row, int panelWidth, string text)
+        {
+            _buffer.PutString(row, panelX, Truncate(text, panelWidth));
+        }
+
+        private static string Truncate(string text, int width)
+        {
+            if (width <= 0)
+                return string.Empty;
+
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            if (text.Length <= width)
+                return text;
+
+            if (width <= 1)
+                return text[..width];
+
+            return text[..(width - 1)] + "…";
+        }
+
+        private static string RepeatChar(char ch, int count)
+        {
+            return count <= 0 ? string.Empty : new string(ch, count);
         }
 
         private void RenderMap(World world)
@@ -83,10 +168,10 @@ namespace RPG_GAME.UI
         {
             int row = World.Height + 1;
             int col = 0;
-                    
-            _buffer.PutString(row++, col, "[W/A/S/D] Move  [Q] Quit  [E] Interact " );
-            _buffer.PutString(row, col, "[B] Backpack  [ESC] Close");
 
+            _buffer.PutString(row++, col, "[W/A/S/D] Move  [E] Interact");
+            _buffer.PutString(row++, col, "[B] Backpack  [J] Journal  [Q] Quit");
+            _buffer.PutString(row, col, "[ESC] Close");
         }
 
         private void RenderUI(Player player, World world)
@@ -103,7 +188,6 @@ namespace RPG_GAME.UI
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
             currentRow = RenderEquipment(player, panelX, currentRow);
-          //  currentRow = RenderInstructions(world, panelX, currentRow);
         }
 
         private void RenderInventory(World world, int selectedInventoryIndex)

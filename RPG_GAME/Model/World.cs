@@ -160,7 +160,7 @@ namespace RPG_GAME.Model
         {
             var availableTiles = GetAvailableFloorTiles();
             SpawnArtifact(availableTiles);
-            SpawnThemeItems(availableTiles, 6);
+            SpawnThemeItems(availableTiles, 10);
             SpawnThemeEnemies(availableTiles, 7);
         }
 

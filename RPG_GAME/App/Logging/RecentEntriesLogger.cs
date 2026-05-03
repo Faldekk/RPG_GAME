@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace RPG_GAME.App.Logging
 {
-    public sealed class RecentEntriesLogger : IGameLogger
+    public sealed class RecentEntriesLogger : IGameLogger, ILogRecentEntriesSource
     {
         private readonly object _sync = new();
         private readonly Queue<LogEntry> _entries = new();

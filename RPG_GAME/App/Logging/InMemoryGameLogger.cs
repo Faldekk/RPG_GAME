@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace RPG_GAME.App.Logging
 {
-    public sealed class InMemoryGameLogger : IGameLogger
+    public sealed class InMemoryGameLogger : IGameLogger, ILogJournalSource
     {
         private readonly object _sync = new();
         private readonly List<LogEntry> _entries = new();

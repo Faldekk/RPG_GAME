@@ -1,4 +1,7 @@
+using RPG_GAME.App.Configuration;
+using RPG_GAME.App.Logging;
 using RPG_GAME.Model;
+using RPG_GAME.Model.DungeonThemes;
 using RPG_GAME.UI;
 
 namespace RPG_GAME.App
@@ -6,17 +9,29 @@ namespace RPG_GAME.App
     public class Game
     {
         private readonly GameLoop _gameLoop;
-        private World _world;
+        private readonly World _world;
+        private readonly GameConfig _config;
+        private readonly InMemoryGameLogger _journalLogger;
+        private readonly RecentEntriesLogger _recentLogger;
+        private readonly FileGameLogger _fileLogger;
 
-        public Game()
+        public Game(GameConfig config)
         {
-            _world = new World();
+            _config = config;
+            _journalLogger = new InMemoryGameLogger();
+            _recentLogger = new RecentEntriesLogger();
+            _fileLogger = new FileGameLogger(config.LogDirectory, config.PlayerName);
+
+            GameLog.Configure(new CompositeGameLogger(_journalLogger, _recentLogger, _fileLogger));
+
+            var theme = DungeonThemeFactory.CreateRandom();
+            _world = new World(theme);
             var renderer = new Renderer();
             var input = new Input();
             var state = new GameState();
             var commandPipeline = BuildCommandPipeline();
             var dispatcher = new GameModeDispatcher(commandPipeline);
-            
+
             _gameLoop = new GameLoop(_world, renderer, input, dispatcher, state);
         }
 

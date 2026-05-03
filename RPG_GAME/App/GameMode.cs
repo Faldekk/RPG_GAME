@@ -6,7 +6,8 @@ namespace RPG_GAME.App
         Inventory,
         Combat,
         Death,
-        WeaponCrafting
+        WeaponCrafting,
+        Journal
     }
 
     public sealed class GameMode
@@ -16,6 +17,7 @@ namespace RPG_GAME.App
         public static readonly GameMode Combat = new(GameModeKind.Combat, "Combat");
         public static readonly GameMode Death = new(GameModeKind.Death, "Death");
         public static readonly GameMode WeaponCrafting = new(GameModeKind.WeaponCrafting, "WeaponCrafting");
+        public static readonly GameMode Journal = new(GameModeKind.Journal, "Journal");
 
         public GameModeKind Kind { get; }
         public string Name { get; }

@@ -22,6 +22,13 @@ namespace RPG_GAME.App
                 return;
             }
 
+            if (command == InputCommand.OpenJournal)
+            {
+                state.CurrentMode = GameMode.Journal;
+                world.AddMessage("Journal opened.");
+                return;
+            }
+
             if (command == InputCommand.Pickup && world.IsAtCraftingStation())
             {
                 state.CurrentMode = GameMode.WeaponCrafting;

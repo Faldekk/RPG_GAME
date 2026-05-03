@@ -1,15 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
 
 namespace RPG_GAME.App.Logging
 {
-    public sealed class FileGameLogger : IGameLogger
+    public sealed class FileGameLogger : IGameLogger, ILogFileSource
     {
         private readonly object _sync = new();
         private readonly string _filePath;
+        private readonly StreamWriter _writer;
 
         public string FilePath => _filePath;
 
@@ -23,10 +23,10 @@ namespace RPG_GAME.App.Logging
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
             var safePlayerName = SanitizeFileName(playerName);
-            var baseName = $"{safePlayerName}_{timestamp}";
-            _filePath = CreateUniquePath(directoryPath, baseName, ".log");
+            _filePath = Path.Combine(directoryPath, $"{safePlayerName}_{timestamp}.log");
 
-            using var stream = new FileStream(_filePath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            var stream = new FileStream(_filePath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            _writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
         }
 
         public void Log(LogEntry entry)
@@ -34,25 +34,10 @@ namespace RPG_GAME.App.Logging
             if (entry == null)
                 return;
 
-            var line = $"{entry.Timestamp:yyyy-MM-dd HH:mm:ss} {entry.Message}{Environment.NewLine}";
-
             lock (_sync)
             {
-                File.AppendAllText(_filePath, line, Encoding.UTF8);
+                _writer.WriteLine(entry.ToString());
             }
-        }
-
-        private static string CreateUniquePath(string directoryPath, string baseName, string extension)
-        {
-            var candidate = Path.Combine(directoryPath, baseName + extension);
-            int suffix = 1;
-
-            while (File.Exists(candidate))
-            {
-                candidate = Path.Combine(directoryPath, $"{baseName}_{suffix++}{extension}");
-            }
-
-            return candidate;
         }
 
         private static string SanitizeFileName(string name)

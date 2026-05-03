@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RPG_GAME.App.Logging
 {
-    public sealed class CompositeGameLogger : IGameLogger
+    public sealed class CompositeGameLogger : IGameLogger, ILogJournalSource, ILogRecentEntriesSource, ILogFileSource
     {
         private readonly object _sync = new();
         private readonly List<IGameLogger> _loggers = new();
@@ -18,13 +18,37 @@ namespace RPG_GAME.App.Logging
                 Add(logger);
         }
 
-        public IReadOnlyList<IGameLogger> Loggers
+        public IReadOnlyList<LogEntry> Entries
         {
             get
             {
                 lock (_sync)
                 {
-                    return _loggers.ToArray();
+                    var journal = _loggers.OfType<ILogJournalSource>().FirstOrDefault();
+                    return journal?.Entries ?? Array.Empty<LogEntry>();
+                }
+            }
+        }
+
+        public string FilePath
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _loggers.OfType<ILogFileSource>().Select(x => x.FilePath).FirstOrDefault() ?? string.Empty;
+                }
+            }
+        }
+
+        IReadOnlyList<LogEntry> ILogRecentEntriesSource.Entries
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    var recent = _loggers.OfType<ILogRecentEntriesSource>().FirstOrDefault();
+                    return recent?.Entries ?? Array.Empty<LogEntry>();
                 }
             }
         }

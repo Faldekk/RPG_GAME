@@ -16,7 +16,8 @@ namespace RPG_GAME.App
                 { GameMode.Inventory, new InventoryModeHandler() },
                 { GameMode.Combat, new CombatModeHandler() },
                 { GameMode.Death, new DeathModeHandler() },
-                { GameMode.WeaponCrafting, new WeaponCraftingModeHandler() }
+                { GameMode.WeaponCrafting, new WeaponCraftingModeHandler() },
+                { GameMode.Journal, new JournalModeHandler() }
             };
         }
 

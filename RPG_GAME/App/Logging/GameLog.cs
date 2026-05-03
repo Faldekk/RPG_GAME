@@ -6,7 +6,10 @@ namespace RPG_GAME.App.Logging
     public static class GameLog
     {
         private static readonly object _sync = new();
-        private static IGameLogger _logger = new CompositeGameLogger();
+        private static IGameLogger _logger = new NullGameLogger();
+        private static ILogJournalSource? _journalSource;
+        private static ILogRecentEntriesSource? _recentSource;
+        private static ILogFileSource? _fileSource;
 
         public static void Configure(IGameLogger logger)
         {
@@ -16,12 +19,15 @@ namespace RPG_GAME.App.Logging
             lock (_sync)
             {
                 _logger = logger;
+                _journalSource = logger as ILogJournalSource;
+                _recentSource = logger as ILogRecentEntriesSource;
+                _fileSource = logger as ILogFileSource;
             }
         }
 
         public static void Info(string message)
         {
-            Log(new LogEntry(DateTime.Now, message));
+            Log(new LogEntry(message));
         }
 
         public static void Log(LogEntry entry)
@@ -35,36 +41,8 @@ namespace RPG_GAME.App.Logging
             }
         }
 
-        public static IReadOnlyList<LogEntry> RecentEntries => FindLogger<RecentEntriesLogger>()?.Entries ?? Array.Empty<LogEntry>();
-
-        public static IReadOnlyList<LogEntry> JournalEntries => FindLogger<InMemoryGameLogger>()?.Entries ?? Array.Empty<LogEntry>();
-
-        public static string? FilePath => FindLogger<FileGameLogger>()?.FilePath;
-
-        private static T? FindLogger<T>() where T : class
-        {
-            lock (_sync)
-            {
-                return FindLogger<T>(_logger);
-            }
-        }
-
-        private static T? FindLogger<T>(IGameLogger logger) where T : class
-        {
-            if (logger is T typed)
-                return typed;
-
-            if (logger is CompositeGameLogger composite)
-            {
-                foreach (var child in composite.Loggers)
-                {
-                    var found = FindLogger<T>(child);
-                    if (found != null)
-                        return found;
-                }
-            }
-
-            return null;
-        }
+        public static IReadOnlyList<LogEntry> JournalEntries => _journalSource?.Entries ?? Array.Empty<LogEntry>();
+        public static IReadOnlyList<LogEntry> RecentEntries => _recentSource?.Entries ?? Array.Empty<LogEntry>();
+        public static string? FilePath => _fileSource?.FilePath;
     }
 }
