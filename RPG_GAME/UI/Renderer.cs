@@ -404,6 +404,14 @@ namespace RPG_GAME.UI
             _buffer.PutString(row++, col + 2, $"Gold collected: {world.Player.Stats.Gold}");
             row++;
 
+            var logPath = GameLog.FilePath;
+            if (!string.IsNullOrWhiteSpace(logPath))
+            {
+                _buffer.PutString(row++, col, "Event log:");
+                _buffer.PutString(row++, col + 2, logPath);
+                row++;
+            }
+
             _buffer.PutString(row++, col, "═════════════════════════════");
             row++;
 

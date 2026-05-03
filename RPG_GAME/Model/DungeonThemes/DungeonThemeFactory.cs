@@ -4,14 +4,16 @@ namespace RPG_GAME.Model.DungeonThemes
 {
     public static class DungeonThemeFactory
     {
+        private static readonly Func<IDungeonTheme>[] ThemeFactories =
+        {
+            () => new ArcaneTheme(),
+            () => new IndustrialTheme(),
+            () => new TreasuryTheme()
+        };
+
         public static IDungeonTheme CreateRandom()
         {
-            return Random.Shared.Next(3) switch
-            {
-                0 => new ArcaneTheme(),
-                1 => new IndustrialTheme(),
-                _ => new TreasuryTheme(),
-            };
+            return ThemeFactories[Random.Shared.Next(ThemeFactories.Length)]();
         }
     }
 }

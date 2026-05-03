@@ -35,23 +35,6 @@ namespace RPG_GAME.Model
                 Inventory.EquipItem(temp, 1);
         }
 
-        public int GetAttackDamage()
-        {
-            int totalDamage = Stats.Strength;
-
-            foreach (var weapon in Inventory.GetAllWeapons())
-            {
-                totalDamage += weapon.Value;
-            }
-
-            return totalDamage;
-        }
-
-        public void Attack(Player target)
-        {
-            int damage = GetAttackDamage();
-            target.Stats.TakeDamage(damage);
-        }
         public void Heal(int amount)
         {
             Stats.Heal(amount);
