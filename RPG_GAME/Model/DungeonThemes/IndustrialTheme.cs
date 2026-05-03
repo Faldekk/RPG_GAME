@@ -8,7 +8,7 @@ namespace RPG_GAME.Model.DungeonThemes
     public sealed class IndustrialTheme : IDungeonTheme
     {
         public string Name => "Industrial";
-        public string IntroMessage => "The clang of metal echoes off the walls";
+        public string IntroMessage => "The clang of metal echoes off the walls.";
 
         public IDungeonStrategy CreateDungeonStrategy() => new IndustrialDungeonStrategy();
         public IItemPool CreateItemPool() => new IndustrialItemPool();

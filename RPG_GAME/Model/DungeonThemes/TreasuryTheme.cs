@@ -8,7 +8,7 @@ namespace RPG_GAME.Model.DungeonThemes
     public sealed class TreasuryTheme : IDungeonTheme
     {
         public string Name => "Treasury";
-        public string IntroMessage => "You feel an itch in your wallet";
+        public string IntroMessage => "You feel an itch in your wallet.";
 
         public IDungeonStrategy CreateDungeonStrategy() => new TreasuryDungeonStrategy();
         public IItemPool CreateItemPool() => new TreasuryItemPool();
@@ -20,7 +20,7 @@ namespace RPG_GAME.Model.DungeonThemes
                 "Lucky Coin Pouch",
                 "Artifact",
                 value: 16,
-                isTwoHanded: false,
+                isTwoHanded: true,
                 strengthBonus: 0,
                 dexterityBonus: 1,
                 aggressionBonus: 0,

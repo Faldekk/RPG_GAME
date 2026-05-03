@@ -8,7 +8,7 @@ namespace RPG_GAME.Model.DungeonThemes
     public sealed class ArcaneTheme : IDungeonTheme
     {
         public string Name => "Arcane";
-        public string IntroMessage => "The smell of old books fills the air";
+        public string IntroMessage => "The smell of old books fills the air.";
 
         public IDungeonStrategy CreateDungeonStrategy() => new ArcaneDungeonStrategy();
         public IItemPool CreateItemPool() => new ArcaneItemPool();

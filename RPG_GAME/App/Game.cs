@@ -22,7 +22,8 @@ namespace RPG_GAME.App
             _recentLogger = new RecentEntriesLogger();
             _fileLogger = new FileGameLogger(config.LogDirectory, config.PlayerName);
 
-            GameLog.Configure(new CompositeGameLogger(_journalLogger, _recentLogger, _fileLogger));
+            var compositeLogger = new CompositeGameLogger(_journalLogger, _recentLogger, _fileLogger);
+            GameLog.Configure(compositeLogger, _journalLogger, _recentLogger, _fileLogger);
 
             var theme = DungeonThemeFactory.CreateRandom();
             _world = new World(theme);

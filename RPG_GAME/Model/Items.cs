@@ -10,6 +10,7 @@ namespace RPG_GAME.Model
         public virtual int Value { get; protected set; }
         public virtual bool IsTwoHanded => false;
         public virtual bool IsHeal => false;
+        public virtual bool CanBeCraftingMaterial => false;
         public virtual Tuple<int, int>? Position { get; set; }
         public int Count;
         public virtual int Durability { get; protected set; }
@@ -52,10 +53,7 @@ namespace RPG_GAME.Model
         {
         }
 
-        public virtual IWeaponCategory GetWeaponCategory()
-        {
-            return NoWeaponCategory.Instance;
-        }
+        public virtual IWeaponCategory GetWeaponCategory() => NoWeaponCategory.Instance;
     }
 
     public sealed class WeaponItem : Items
@@ -113,15 +111,13 @@ namespace RPG_GAME.Model
             stats.ModifyStat("Luck", -_luckBonus);
         }
 
-        public override IWeaponCategory GetWeaponCategory()
-        {
-            return Category;
-        }
+        public override IWeaponCategory GetWeaponCategory() => Category;
     }
 
     public sealed class JunkItem : Items
     {
         public override char MapCharacter => 'j';
+        public override bool CanBeCraftingMaterial => true;
 
         public JunkItem(string name, int value, Tuple<int, int>? position = null)
             : base(name, "Junk", value, position)
@@ -161,27 +157,24 @@ namespace RPG_GAME.Model
 
         public override bool TryCollect(Player player, out string message)
         {
-            if (_currencyName.Equals("Coins", StringComparison.OrdinalIgnoreCase))
+            switch (_currencyName)
             {
-                player.Stats.ModifyCurrency("Coins", Value);
-                message = $"Collected {Value} Coins.";
-                return true;
-            }
+                case "Coins":
+                    player.Stats.ModifyCurrency("Coins", Value);
+                    message = $"Collected {Value} Coins.";
+                    return true;
 
-            if (_currencyName.Equals("Gold", StringComparison.OrdinalIgnoreCase))
-            {
-                player.Stats.ModifyCurrency("Gold", Value);
-                message = $"Collected {Value} Gold.";
-                return true;
-            }
+                case "Gold":
+                    player.Stats.ModifyCurrency("Gold", Value);
+                    message = $"Collected {Value} Gold.";
+                    return true;
 
-            message = string.Empty;
-            return false;
+                default:
+                    message = string.Empty;
+                    return false;
+            }
         }
 
-        public override bool TryUse(Player player, out string message)
-        {
-            return TryCollect(player, out message);
-        }
+        public override bool TryUse(Player player, out string message) => TryCollect(player, out message);
     }
 }

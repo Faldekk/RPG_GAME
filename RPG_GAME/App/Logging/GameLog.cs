@@ -19,9 +19,29 @@ namespace RPG_GAME.App.Logging
             lock (_sync)
             {
                 _logger = logger;
-                _journalSource = logger as ILogJournalSource;
-                _recentSource = logger as ILogRecentEntriesSource;
-                _fileSource = logger as ILogFileSource;
+                _journalSource = null;
+                _recentSource = null;
+                _fileSource = null;
+            }
+        }
+
+        public static void Configure(IGameLogger logger, ILogJournalSource journalSource, ILogRecentEntriesSource recentSource, ILogFileSource fileSource)
+        {
+            if (logger == null)
+                throw new ArgumentNullException(nameof(logger));
+            if (journalSource == null)
+                throw new ArgumentNullException(nameof(journalSource));
+            if (recentSource == null)
+                throw new ArgumentNullException(nameof(recentSource));
+            if (fileSource == null)
+                throw new ArgumentNullException(nameof(fileSource));
+
+            lock (_sync)
+            {
+                _logger = logger;
+                _journalSource = journalSource;
+                _recentSource = recentSource;
+                _fileSource = fileSource;
             }
         }
 
