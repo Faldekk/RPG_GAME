@@ -47,6 +47,9 @@ namespace RPG_GAME.Model
 
         public INoiseEmitter NoiseEmitter { get; private set; }
 
+        private readonly Dictionary<Enemy, EnemySubscriptions> _enemySubscriptionMap = new();
+        private readonly Dictionary<Enemy, EnemySpecies> _enemySpecies = new();
+
         public World()
             : this(DungeonThemeFactory.CreateRandom())
         {
@@ -215,260 +218,53 @@ namespace RPG_GAME.Model
             if (_enemyFactory == null)
                 return;
 
-            int toSpawn = Math.Min(count, availableTiles.Count);
-            for (int i = 0; i < toSpawn; i++)
+            var spawnPlans = _enemyFactory.CreateSpeciesSpawnPlan();
+            if (spawnPlans == null || spawnPlans.Count == 0)
+                return;
+
+            foreach (var plan in spawnPlans)
             {
-                int pickIndex = Random.Shared.Next(availableTiles.Count);
-                var (y, x) = availableTiles[pickIndex];
-                availableTiles.RemoveAt(pickIndex);
-
-                var enemy = _enemyFactory.CreateRandomEnemy(new Vec2(x, y));
-                _tiles[y, x].Enemy = enemy;
-
-                // Ensure there is a species publisher for this species
-                var sk = (enemy.SpeciesKey ?? string.Empty).ToLowerInvariant();
-                if (!_speciesPublishers.TryGetValue(sk, out var speciesPub))
-                {
-                    speciesPub = new SpeciesDeathPublisher();
-                    _speciesPublishers[sk] = speciesPub;
-                }
-
-                // Choose reaction strategy for the species (data-driven via species key)
-                Events.ISpeciesDeathReaction reaction;
-                if (sk.Contains("goblin") || sk.Contains("bandit") || sk.Contains("apprentice") || sk.Contains("drone"))
-                    reaction = new Events.CowardlyReaction();
-                else
-                    reaction = new Events.AggressiveReaction();
-
-                // Attach species publisher and reaction to enemy (so it can publish or know its group)
-                enemy.SetSpeciesPublisher(speciesPub);
-                enemy.SetSpeciesReaction(reaction);
-
-                var subs = new Events.EnemySubscriptions(enemy, _noisePublisher, speciesPub, _soundPropagation, reaction);
-                subs.Subscribe();
-                _enemySubscriptions.Add(subs);
-            }
-        }
-
-        private void SpawnCurrencyItems(int coinCount, int goldCount)
-        {
-            var availableTiles = GetAvailableFloorTiles();
-
-            void SpawnCurrency(int count, Func<Vec2, Items> factory)
-            {
-                int toSpawn = Math.Min(count, availableTiles.Count);
-
+                int toSpawn = Math.Min(plan.Count, availableTiles.Count);
                 for (int i = 0; i < toSpawn; i++)
                 {
+                    if (availableTiles.Count == 0)
+                        return;
+
                     int pickIndex = Random.Shared.Next(availableTiles.Count);
                     var (y, x) = availableTiles[pickIndex];
                     availableTiles.RemoveAt(pickIndex);
-                    _tiles[y, x].Item = factory(new Vec2(x, y));
-                }
-            }
 
-            SpawnCurrency(coinCount, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(5, 16)));
-            SpawnCurrency(goldCount, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
-        }
-
-        public bool TryMovePlayer(int dx, int dy)
-        {
-            var next = Player.Pos.Add(dx, dy);
-
-            if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
-            {
-                AddMessage("Walking into a wall.");
-                return false;
-            }
-
-            var targetTile = _tiles[next.Y, next.X];
-            if (targetTile.IsWall)
-            {
-                AddMessage("Walking into a wall.");
-                return false;
-            }
-
-            if (targetTile.Enemy != null)
-            {
-                StartCombat(targetTile.Enemy);
-                return true;
-            }
-
-            Player.MoveTo(next);
-            return true;
-        }
-
-        public bool TryPickUpItem()
-        {
-            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
-            var item = tile.Item;
-
-            if (item == null)
-            {
-                AddMessage("Cannot pick up: no item here.");
-                return false;
-            }
-
-            // immediate collect (coins, gold etc.)
-            if (item.TryCollect(Player, out var collectMessage))
-            {
-                tile.Item = null;
-                AddMessage(collectMessage);
-                AddMessage($"Picking up item: {item.Name}.");
-
-                // if collected item is equipable (rare), emit noise
-                if (item.CanEquip && NoiseEmitter != null)
-                {
-                    Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
-                }
-
-                return true;
-            }
-
-            // Non-equipable items (junk, consumables) - store normally
-            if (!item.CanEquip)
-                return TryStoreFromTile(tile, item, $"Picked up {item.Name}.");
-
-            // Equipable items: try auto-equip first
-            if (TryEquipWeapon(item))
-            {
-                ApplyWeaponBonuses(item);
-                tile.Item = null;
-                AddMessage($"Equipped {item.Name}.");
-
-                // emit noise for equipping weapon (player picked up and equipped)
-                if (NoiseEmitter != null)
-                {
-                    Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
-                }
-
-                return true;
-            }
-
-            // If auto-equip failed, try to store in backpack. If storing succeeds, it's still a successful pickup and should emit noise.
-            var stored = TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
-            if (stored)
-            {
-                if (NoiseEmitter != null)
-                {
-                    Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
-                }
-            }
-
-            return stored;
-        }
-
-        public void ProcessEnemiesTurn()
-        {
-            // move each enemy once per player turn
-            var moved = new List<(Vec2 from, Vec2 to)>();
-            var tiles = _tiles;
-
-            for (int y = 0; y < Height; y++)
-            {
-                for (int x = 0; x < Width; x++)
-                {
-                    var enemy = tiles[y, x].Enemy;
-                    if (enemy == null) continue;
-                    if (!enemy.IsAlive) continue;
-
-                    // don't move into player
-                    var playerPos = Player.Pos;
-                    // choose next
-                    var next = _enemyMovementStrategy.ChooseNextPosition(enemy, this);
-                    if (next.X == enemy.Position.X && next.Y == enemy.Position.Y) continue;
-                    if (next.X == playerPos.X && next.Y == playerPos.Y) continue;
-
-                    // ensure target tile still free
-                    var targetTile = tiles[next.Y, next.X];
-                    if (targetTile.IsWall || targetTile.Enemy != null) continue;
-
-                    // perform move
-                    tiles[y, x].Enemy = null;
-                    tiles[next.Y, next.X].Enemy = enemy;
-                    enemy.MoveTo(next);
+                    var enemy = plan.CreateEnemy(new Vec2(x, y));
+                    _tiles[y, x].Enemy = enemy;
+                    RegisterEnemy(enemy, plan.Species);
                 }
             }
         }
 
-        public bool TryCombatRound(string attackKey)
+        private void RegisterEnemy(Enemy enemy, EnemySpecies species)
         {
-            if (ActiveEnemy == null)
-            {
-                AddMessage("No active enemy.");
-                return false;
-            }
+            _enemySpecies[enemy] = species;
 
-            if (!_attackTypes.TryGetValue(attackKey, out var attackType))
-            {
-                AddMessage("Unknown attack style.");
-                return false;
-            }
-
-            var weapon = ResolveActiveWeapon();
-            var enemyBeforeRound = ActiveEnemy;
-            var result = _combatEngine.ExecuteRound(Player, enemyBeforeRound, attackType, weapon);
-            AddMessage(result.Summary);
-            AddMessage($"Player attack dealt {result.PlayerDamageDealt} damage.");
-            AddMessage($"Enemy attack dealt {result.EnemyDamageDealt} damage.");
-
-            if (result.EnemyDefeated)
-            {
-                var defeatedPos = enemyBeforeRound.Position;
-
-                // publish species death event before removal
-                if (_speciesPublishers != null && _speciesPublishers.TryGetValue(enemyBeforeRound.SpeciesKey, out var pub))
-                {
-                    var ev = new Events.SpeciesDeathEvent(enemyBeforeRound, enemyBeforeRound.SpeciesKey);
-                    pub.Publish(ev);
-                }
-
-                // unsubscribe and remove subscriptions for this enemy
-                for (int i = _enemySubscriptions.Count - 1; i >= 0; i--)
-                {
-                    var s = _enemySubscriptions[i];
-                    if (s.OwnedBy(enemyBeforeRound))
-                    {
-                        s.Unsubscribe();
-                        _enemySubscriptions.RemoveAt(i);
-                    }
-                }
-
-                // Remove enemy from map and spawn loot
-                RemoveEnemyFromMap(enemyBeforeRound);
-                SpawnVictoryLoot(defeatedPos);
-                Player.Heal(50);
-                ActiveEnemy = null;
-                AddMessage("Enemy removed from map.");
-                AddMessage($"Enemy defeated: {enemyBeforeRound.Name}.");
-            }
-
-            if (result.PlayerDefeated)
-            {
-                AddMessage("You died. Game over.");
-                if (!string.IsNullOrWhiteSpace(GameLog.FilePath))
-                    AddMessage($"Log file: {GameLog.FilePath}");
-            }
-
-            return true;
+            var subscriptions = new EnemySubscriptions(enemy, _noisePublisher, species.DeathPublisher, _soundPropagation, species.DeathReaction);
+            subscriptions.Subscribe();
+            _enemySubscriptionMap[enemy] = subscriptions;
+            _enemySubscriptions.Add(subscriptions);
         }
 
-        private Items? ResolveActiveWeapon()
+        private void UnsubscribeEnemy(Enemy enemy)
         {
-            if (Player.Inventory.LeftHand != null)
-                return Player.Inventory.LeftHand;
+            if (_enemySubscriptionMap.TryGetValue(enemy, out var subscriptions))
+            {
+                subscriptions.Unsubscribe();
+                _enemySubscriptionMap.Remove(enemy);
+            }
 
-            return Player.Inventory.RightHand;
-        }
-
-        private void StartCombat(Enemy enemy)
-        {
-            ActiveEnemy = enemy;
-            AddMessage($"Encounter: {enemy.Name} | HP: {enemy.Health} | ATK: {enemy.AttackMin}-{enemy.AttackMax} | ARM: {enemy.Armor}");
+            _enemySpecies.Remove(enemy);
         }
 
         private void RemoveEnemyFromMap(Enemy enemy)
         {
+            UnsubscribeEnemy(enemy);
             var pos = enemy.Position;
             if (pos.X >= 0 && pos.X < Width && pos.Y >= 0 && pos.Y < Height)
                 _tiles[pos.Y, pos.X].Enemy = null;
@@ -734,18 +530,39 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        private int GetOneHandEquipSlot()
+        private void ResetPlayerStats()
         {
-            if (Player.Inventory.HasTwoHandedWeapon)
-                return 0;
+            Player = new Player(new Vec2(Player.Pos.X, Player.Pos.Y));
+        }
 
-            if (Player.Inventory.LeftHand == null)
-                return 0;
+        public void ProcessEnemiesTurn()
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    var enemy = _tiles[y, x].Enemy;
+                    if (enemy == null || !enemy.IsAlive)
+                        continue;
 
-            if (Player.Inventory.RightHand == null)
-                return 1;
+                    var next = _enemyMovementStrategy.ChooseNextPosition(enemy, this);
+                    if (next.X == enemy.Position.X && next.Y == enemy.Position.Y)
+                        continue;
 
-            return 0;
+                    if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
+                        continue;
+
+                    if (_tiles[next.Y, next.X].IsWall || _tiles[next.Y, next.X].Enemy != null)
+                        continue;
+
+                    if (Player.Pos.X == next.X && Player.Pos.Y == next.Y)
+                        continue;
+
+                    _tiles[y, x].Enemy = null;
+                    _tiles[next.Y, next.X].Enemy = enemy;
+                    enemy.MoveTo(next);
+                }
+            }
         }
 
         public bool DropFromBackpack(int index)
@@ -849,5 +666,171 @@ namespace RPG_GAME.Model
             return true;
         }
 
+        private void SpawnCurrencyItems(int coinCount, int goldCount)
+        {
+            var availableTiles = GetAvailableFloorTiles();
+
+            void SpawnCurrency(int count, Func<Vec2, Items> factory)
+            {
+                int toSpawn = Math.Min(count, availableTiles.Count);
+
+                for (int i = 0; i < toSpawn; i++)
+                {
+                    int pickIndex = Random.Shared.Next(availableTiles.Count);
+                    var (y, x) = availableTiles[pickIndex];
+                    availableTiles.RemoveAt(pickIndex);
+                    _tiles[y, x].Item = factory(new Vec2(x, y));
+                }
+            }
+
+            SpawnCurrency(coinCount, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(5, 16)));
+            SpawnCurrency(goldCount, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
+        }
+
+        public bool TryMovePlayer(int dx, int dy)
+        {
+            var next = Player.Pos.Add(dx, dy);
+
+            if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
+            {
+                AddMessage("Walking into a wall.");
+                return false;
+            }
+
+            var targetTile = _tiles[next.Y, next.X];
+            if (targetTile.IsWall)
+            {
+                AddMessage("Walking into a wall.");
+                return false;
+            }
+
+            if (targetTile.Enemy != null)
+            {
+                StartCombat(targetTile.Enemy);
+                return true;
+            }
+
+            Player.MoveTo(next);
+            return true;
+        }
+
+        public bool TryPickUpItem()
+        {
+            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            var item = tile.Item;
+
+            if (item == null)
+            {
+                AddMessage("Cannot pick up: no item here.");
+                return false;
+            }
+
+            if (item.TryCollect(Player, out var collectMessage))
+            {
+                tile.Item = null;
+                AddMessage(collectMessage);
+                AddMessage($"Picking up item: {item.Name}.");
+
+                if (item.CanEquip && NoiseEmitter != null)
+                    NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
+
+                return true;
+            }
+
+            if (!item.CanEquip)
+                return TryStoreFromTile(tile, item, $"Picked up {item.Name}.");
+
+            if (TryEquipWeapon(item))
+            {
+                ApplyWeaponBonuses(item);
+                tile.Item = null;
+                AddMessage($"Equipped {item.Name}.");
+
+                if (NoiseEmitter != null)
+                    NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
+
+                return true;
+            }
+
+            var stored = TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
+            if (stored && NoiseEmitter != null)
+                NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
+
+            return stored;
+        }
+
+        private int GetOneHandEquipSlot()
+        {
+            if (Player.Inventory.HasTwoHandedWeapon)
+                return 0;
+
+            if (Player.Inventory.LeftHand == null)
+                return 0;
+
+            if (Player.Inventory.RightHand == null)
+                return 1;
+
+            return 0;
+        }
+
+        private Items? ResolveActiveWeapon()
+        {
+            if (Player.Inventory.LeftHand != null)
+                return Player.Inventory.LeftHand;
+
+            return Player.Inventory.RightHand;
+        }
+
+        private void StartCombat(Enemy enemy)
+        {
+            ActiveEnemy = enemy;
+            AddMessage($"Encounter: {enemy.Name} | HP: {enemy.Health} | ATK: {enemy.AttackMin}-{enemy.AttackMax} | ARM: {enemy.Armor}");
+        }
+
+        public bool TryCombatRound(string attackKey)
+        {
+            if (ActiveEnemy == null)
+            {
+                AddMessage("No active enemy.");
+                return false;
+            }
+
+            if (!_attackTypes.TryGetValue(attackKey, out var attackType))
+            {
+                AddMessage("Unknown attack style.");
+                return false;
+            }
+
+            var weapon = ResolveActiveWeapon();
+            var enemyBeforeRound = ActiveEnemy;
+            var result = _combatEngine.ExecuteRound(Player, enemyBeforeRound, attackType, weapon);
+            AddMessage(result.Summary);
+            AddMessage($"Player attack dealt {result.PlayerDamageDealt} damage.");
+            AddMessage($"Enemy attack dealt {result.EnemyDamageDealt} damage.");
+
+            if (result.EnemyDefeated)
+            {
+                var defeatedPos = enemyBeforeRound.Position;
+
+                if (_enemySpecies.TryGetValue(enemyBeforeRound, out var species))
+                    species.DeathPublisher.Publish(new SpeciesDeathEvent(enemyBeforeRound, species.Name));
+
+                RemoveEnemyFromMap(enemyBeforeRound);
+                SpawnVictoryLoot(defeatedPos);
+                Player.Heal(50);
+                ActiveEnemy = null;
+                AddMessage("Enemy removed from map.");
+                AddMessage($"Enemy defeated: {enemyBeforeRound.Name}.");
+            }
+
+            if (result.PlayerDefeated)
+            {
+                AddMessage("You died. Game over.");
+                if (!string.IsNullOrWhiteSpace(GameLog.FilePath))
+                    AddMessage($"Log file: {GameLog.FilePath}");
+            }
+
+            return true;
+        }
     }
 }

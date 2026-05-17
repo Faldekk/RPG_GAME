@@ -77,27 +77,24 @@ namespace RPG_GAME.Model.DungeonThemes
 
     internal sealed class ArcaneEnemyFactory : IEnemyFactory
     {
-        private static readonly Func<Vec2, Enemy>[] Templates =
-        {
-            pos => new Enemy("apprentice_mage", "Apprentice Mage", 70, 8, 14, 4, pos, 'M', new MagicalAttackType()),
-            pos => new Enemy("runic_sage", "Runic Sage", 90, 10, 16, 5, pos, 'S', new MagicalAttackType()),
-            pos => new Enemy("archmage", "Archmage", 110, 12, 18, 6, pos, 'A', new MagicalAttackType())
-        };
-
         public Enemy CreateRandomEnemy(Vec2 position)
         {
-            return Templates[Random.Shared.Next(Templates.Length)](position);
+            return CreateSpeciesSpawnPlan()[Random.Shared.Next(CreateSpeciesSpawnPlan().Count)].CreateEnemy(position);
         }
 
-        public System.Collections.Generic.IReadOnlyList<EnemySpecies> CreateSpeciesSpawnPlan()
+        public System.Collections.Generic.IReadOnlyList<EnemySpeciesSpawnPlan> CreateSpeciesSpawnPlan()
         {
-            var species1Pub = new Events.SpeciesDeathPublisher();
-            var species2Pub = new Events.SpeciesDeathPublisher();
+            var apprenticePub = new Events.SpeciesDeathPublisher();
+            var runicPub = new Events.SpeciesDeathPublisher();
 
-            var species1 = new EnemySpecies("ApprenticeGroup", species1Pub, new Events.CowardlyReaction(), pos => new Enemy("apprentice_mage", "Apprentice Mage", 70, 8, 14, 4, pos, 'M', new MagicalAttackType(), species1Pub, new Events.CowardlyReaction()));
-            var species2 = new EnemySpecies("RunicGroup", species2Pub, new Events.AggressiveReaction(), pos => new Enemy("runic_sage", "Runic Sage", 90, 10, 16, 5, pos, 'S', new MagicalAttackType(), species2Pub, new Events.AggressiveReaction()));
+            var apprenticeSpecies = new EnemySpecies("Apprentice Mage", apprenticePub, new Events.CowardlyReaction());
+            var runicSpecies = new EnemySpecies("Runic Sage", runicPub, new Events.AggressiveReaction());
 
-            return new EnemySpecies[] { species1, species1, species2 };
+            return new EnemySpeciesSpawnPlan[]
+            {
+                new EnemySpeciesSpawnPlan(apprenticeSpecies, 3, pos => new Enemy("apprentice_mage", "Apprentice Mage", 70, 8, 14, 4, pos, 'M', new MagicalAttackType())),
+                new EnemySpeciesSpawnPlan(runicSpecies, 2, pos => new Enemy("runic_sage", "Runic Sage", 90, 10, 16, 5, pos, 'S', new MagicalAttackType()))
+            };
         }
     }
 }

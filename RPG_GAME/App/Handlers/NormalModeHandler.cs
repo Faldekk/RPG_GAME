@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using RPG_GAME.Model;
-using RPG_GAME.App.Logging;
 
 namespace RPG_GAME.App
 {
@@ -27,8 +26,6 @@ namespace RPG_GAME.App
             {
                 state.CurrentMode = GameMode.Journal;
                 world.AddMessage("Journal opened.");
-                // diagnostic: show how many entries the journal currently holds
-                world.AddMessage($"Journal entries: {GameLog.JournalEntries.Count}");
                 return false;
             }
 

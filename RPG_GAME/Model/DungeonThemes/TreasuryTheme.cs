@@ -58,28 +58,24 @@ namespace RPG_GAME.Model.DungeonThemes
 
     internal sealed class TreasuryEnemyFactory : IEnemyFactory
     {
-        private static readonly Func<Vec2, Enemy>[] Templates =
-        {
-            pos => new Enemy("animated_safe", "Animated Safe", 95, 10, 16, 6, pos, 'S', new NormalAttackType()),
-            pos => new Enemy("rogue_briefcase", "Rogue Briefcase", 85, 9, 15, 5, pos, 'B', new StealthAttackType()),
-            pos => new Enemy("vault_guardian", "Vault Guardian", 125, 13, 20, 9, pos, 'V', new NormalAttackType())
-        };
-
         public Enemy CreateRandomEnemy(Vec2 position)
         {
-            return Templates[Random.Shared.Next(Templates.Length)](position);
+            return CreateSpeciesSpawnPlan()[Random.Shared.Next(CreateSpeciesSpawnPlan().Count)].CreateEnemy(position);
         }
 
-        public System.Collections.Generic.IReadOnlyList<EnemySpecies> CreateSpeciesSpawnPlan()
+        public System.Collections.Generic.IReadOnlyList<EnemySpeciesSpawnPlan> CreateSpeciesSpawnPlan()
         {
-            var s1 = new Events.SpeciesDeathPublisher();
-            var s2 = new Events.SpeciesDeathPublisher();
+            var briefcasePub = new Events.SpeciesDeathPublisher();
+            var safePub = new Events.SpeciesDeathPublisher();
 
-            var species1 = new EnemySpecies("Safes", s1, new Events.AggressiveReaction(), pos => new Enemy("animated_safe", "Animated Safe", 95, 10, 16, 6, pos, 'S', new NormalAttackType(), s1, new Events.AggressiveReaction()));
-            var species2 = new EnemySpecies("Briefcases", s2, new Events.CowardlyReaction(), pos => new Enemy("rogue_briefcase", "Rogue Briefcase", 85, 9, 15, 5, pos, 'B', new StealthAttackType(), s2, new Events.CowardlyReaction()));
+            var briefcaseSpecies = new EnemySpecies("Rogue Briefcase", briefcasePub, new Events.CowardlyReaction());
+            var safeSpecies = new EnemySpecies("Animated Safe", safePub, new Events.AggressiveReaction());
 
-            // Ensure at least two of each species in the spawn plan
-            return new EnemySpecies[] { species1, species1, species2 };
+            return new EnemySpeciesSpawnPlan[]
+            {
+                new EnemySpeciesSpawnPlan(briefcaseSpecies, 3, pos => new Enemy("rogue_briefcase", "Rogue Briefcase", 85, 9, 15, 5, pos, 'B', new StealthAttackType())),
+                new EnemySpeciesSpawnPlan(safeSpecies, 2, pos => new Enemy("animated_safe", "Animated Safe", 95, 10, 16, 6, pos, 'S', new NormalAttackType()))
+            };
         }
     }
 }
