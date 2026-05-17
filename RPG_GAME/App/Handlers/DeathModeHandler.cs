@@ -6,21 +6,21 @@ namespace RPG_GAME.App
     {
         private const string DeathHelpMessage = "Death mode: press [R] to respawn or [Q] to quit.";
 
-        public void Handle(InputCommand command, World world, GameState state)
+        public bool Handle(InputCommand command, World world, GameState state)
         {
             switch (command)
             {
                 case InputCommand.DeathRespawn:
                     HandleRespawn(world, state);
-                    break;
+                    return true;
 
                 case InputCommand.Quit:
                     world.Stop();
-                    break;
+                    return false;
 
                 default:
                     world.AddMessage(DeathHelpMessage);
-                    break;
+                    return false;
             }
         }
 

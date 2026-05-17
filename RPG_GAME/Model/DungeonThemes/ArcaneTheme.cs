@@ -88,5 +88,16 @@ namespace RPG_GAME.Model.DungeonThemes
         {
             return Templates[Random.Shared.Next(Templates.Length)](position);
         }
+
+        public System.Collections.Generic.IReadOnlyList<EnemySpecies> CreateSpeciesSpawnPlan()
+        {
+            var species1Pub = new Events.SpeciesDeathPublisher();
+            var species2Pub = new Events.SpeciesDeathPublisher();
+
+            var species1 = new EnemySpecies("ApprenticeGroup", species1Pub, new Events.CowardlyReaction(), pos => new Enemy("apprentice_mage", "Apprentice Mage", 70, 8, 14, 4, pos, 'M', new MagicalAttackType(), species1Pub, new Events.CowardlyReaction()));
+            var species2 = new EnemySpecies("RunicGroup", species2Pub, new Events.AggressiveReaction(), pos => new Enemy("runic_sage", "Runic Sage", 90, 10, 16, 5, pos, 'S', new MagicalAttackType(), species2Pub, new Events.AggressiveReaction()));
+
+            return new EnemySpecies[] { species1, species1, species2 };
+        }
     }
 }

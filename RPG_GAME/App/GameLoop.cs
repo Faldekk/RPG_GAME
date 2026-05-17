@@ -51,10 +51,9 @@ namespace RPG_GAME.App
                 return;
             }
 
-            _dispatcher.HandleCommand(command, _world, _state);
+            var consumedTurn = _dispatcher.HandleCommand(command, _world, _state);
 
-            // After processing player command, if we're in normal gameplay mode, let enemies take their turns
-            if (_state.CurrentMode == GameMode.Normal)
+            if (consumedTurn && _state.CurrentMode == GameMode.Normal)
             {
                 _world.ProcessEnemiesTurn();
             }

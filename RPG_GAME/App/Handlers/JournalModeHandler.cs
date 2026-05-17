@@ -4,20 +4,20 @@ namespace RPG_GAME.App
 {
     public class JournalModeHandler : IGameModeHandler
     {
-        public void Handle(InputCommand command, World world, GameState state)
+        public bool Handle(InputCommand command, World world, GameState state)
         {
             switch (command)
             {
                 case InputCommand.OpenJournal:
                     state.CurrentMode = GameMode.Normal;
                     world.AddMessage("Journal closed.");
-                    break;
+                    return false;
                 case InputCommand.Quit:
                     world.Stop();
-                    break;
+                    return false;
                 default:
                     world.AddMessage("Journal mode: press J to return.");
-                    break;
+                    return false;
             }
         }
     }

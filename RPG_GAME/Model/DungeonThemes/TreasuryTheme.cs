@@ -69,5 +69,17 @@ namespace RPG_GAME.Model.DungeonThemes
         {
             return Templates[Random.Shared.Next(Templates.Length)](position);
         }
+
+        public System.Collections.Generic.IReadOnlyList<EnemySpecies> CreateSpeciesSpawnPlan()
+        {
+            var s1 = new Events.SpeciesDeathPublisher();
+            var s2 = new Events.SpeciesDeathPublisher();
+
+            var species1 = new EnemySpecies("Safes", s1, new Events.AggressiveReaction(), pos => new Enemy("animated_safe", "Animated Safe", 95, 10, 16, 6, pos, 'S', new NormalAttackType(), s1, new Events.AggressiveReaction()));
+            var species2 = new EnemySpecies("Briefcases", s2, new Events.CowardlyReaction(), pos => new Enemy("rogue_briefcase", "Rogue Briefcase", 85, 9, 15, 5, pos, 'B', new StealthAttackType(), s2, new Events.CowardlyReaction()));
+
+            // Ensure at least two of each species in the spawn plan
+            return new EnemySpecies[] { species1, species1, species2 };
+        }
     }
 }

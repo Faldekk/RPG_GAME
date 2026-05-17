@@ -21,16 +21,14 @@ namespace RPG_GAME.App
             };
         }
 
-        public void HandleCommand(InputCommand command, World world, GameState state)
+        public bool HandleCommand(InputCommand command, World world, GameState state)
         {
             if (_handlers.TryGetValue(state.CurrentMode, out var handler))
             {
-                handler.Handle(command, world, state);
+                return handler.Handle(command, world, state);
             }
-            else
-            {
-                throw new InvalidOperationException($"No handler registered for mode: {state.CurrentMode.Name}");
-            }
+
+            throw new InvalidOperationException($"No handler registered for mode: {state.CurrentMode.Name}");
         }
     }
 }

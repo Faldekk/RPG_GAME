@@ -6,50 +6,50 @@ namespace RPG_GAME.App
     {
         private const string InventoryHelpMessage = "Inventory mode: use W/S/E/D/U/C/ESC";
 
-        public void Handle(InputCommand command, World world, GameState state)
+        public bool Handle(InputCommand command, World world, GameState state)
         {
             switch (command)
             {
                 case InputCommand.InventoryUp:
                     MoveInventorySelection(world, state, -1);
-                    break;
+                    return false;
 
                 case InputCommand.InventoryDown:
                     MoveInventorySelection(world, state, 1);
-                    break;
+                    return false;
 
                 case InputCommand.InventoryEquip:
                     if (world.EquipFromBackpack(state.SelectedInventoryIndex))
                         ClampInventoryIndex(world, state);
-                    break;
+                    return true;
 
                 case InputCommand.InventoryDrop:
                     if (world.DropFromBackpack(state.SelectedInventoryIndex))
                         ClampInventoryIndex(world, state);
-                    break;
+                    return true;
 
                 case InputCommand.InventoryUse:
                     if (world.UseFromBackpack(state.SelectedInventoryIndex))
                         ClampInventoryIndex(world, state);
-                    break;
+                    return true;
 
                 case InputCommand.InventoryCraftArmor:
                     world.CraftArmorFromJunk();
                     ClampInventoryIndex(world, state);
-                    break;
+                    return true;
 
                 case InputCommand.CloseInventory:
                     state.CurrentMode = GameMode.Normal;
                     world.AddMessage("Inventory closed.");
-                    break;
+                    return false;
 
                 case InputCommand.Unknown:
                     world.AddMessage("Unknown command");
-                    break;
+                    return false;
 
                 default:
                     world.AddMessage(InventoryHelpMessage);
-                    break;
+                    return false;
             }
         }
 

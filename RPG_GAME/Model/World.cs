@@ -309,24 +309,34 @@ namespace RPG_GAME.Model
                 return false;
             }
 
+            // immediate collect (coins, gold etc.)
             if (item.TryCollect(Player, out var collectMessage))
             {
                 tile.Item = null;
                 AddMessage(collectMessage);
                 AddMessage($"Picking up item: {item.Name}.");
+
+                // if collected item is equipable (rare), emit noise
+                if (item.CanEquip && NoiseEmitter != null)
+                {
+                    Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
+                }
+
                 return true;
             }
 
+            // Non-equipable items (junk, consumables) - store normally
             if (!item.CanEquip)
                 return TryStoreFromTile(tile, item, $"Picked up {item.Name}.");
 
+            // Equipable items: try auto-equip first
             if (TryEquipWeapon(item))
             {
                 ApplyWeaponBonuses(item);
                 tile.Item = null;
                 AddMessage($"Equipped {item.Name}.");
 
-                // emit noise for equipping weapon
+                // emit noise for equipping weapon (player picked up and equipped)
                 if (NoiseEmitter != null)
                 {
                     Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
@@ -335,7 +345,17 @@ namespace RPG_GAME.Model
                 return true;
             }
 
-            return TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
+            // If auto-equip failed, try to store in backpack. If storing succeeds, it's still a successful pickup and should emit noise.
+            var stored = TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
+            if (stored)
+            {
+                if (NoiseEmitter != null)
+                {
+                    Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
+                }
+            }
+
+            return stored;
         }
 
         public void ProcessEnemiesTurn()

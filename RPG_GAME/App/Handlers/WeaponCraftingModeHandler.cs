@@ -7,7 +7,7 @@ namespace RPG_GAME.App
     {
         private const string CraftingHelpMessage = "Crafting: W/S to select, E to combine, ESC to leave.";
 
-        public void Handle(InputCommand command, World world, GameState state)
+        public bool Handle(InputCommand command, World world, GameState state)
         {
             var weapons = GetWeaponsFromInventory(world);
 
@@ -16,26 +16,26 @@ namespace RPG_GAME.App
                 case InputCommand.CraftingSelectFirst:
                     MoveWeaponSelection(state, weapons.Count, 1);
                     world.AddMessage($"Selected weapon {state.CraftingFirstSelection + 1}");
-                    break;
+                    return false;
 
                 case InputCommand.CraftingSelectSecond:
                     MoveWeaponSelection(state, weapons.Count, -1);
                     world.AddMessage($"Selected weapon {state.CraftingFirstSelection + 1}");
-                    break;
+                    return false;
 
                 case InputCommand.CraftingCombine:
                     HandleWeaponCombine(world, state, weapons);
-                    break;
+                    return true;
 
                 case InputCommand.CraftingCancel:
                     state.CurrentMode = GameMode.Normal;
                     state.CraftingFirstSelection = -1;
                     world.AddMessage("Crafting station left.");
-                    break;
+                    return false;
 
                 default:
                     world.AddMessage(CraftingHelpMessage);
-                    break;
+                    return false;
             }
         }
 

@@ -78,5 +78,16 @@ namespace RPG_GAME.Model.DungeonThemes
         {
             return Templates[Random.Shared.Next(Templates.Length)](position);
         }
+
+        public System.Collections.Generic.IReadOnlyList<EnemySpecies> CreateSpeciesSpawnPlan()
+        {
+            var s1Pub = new Events.SpeciesDeathPublisher();
+            var s2Pub = new Events.SpeciesDeathPublisher();
+
+            var s1 = new EnemySpecies("Drones", s1Pub, new Events.CowardlyReaction(), pos => new Enemy("maintenance_drone", "Maintenance Drone", 80, 9, 15, 5, pos, 'D', new NormalAttackType(), s1Pub, new Events.CowardlyReaction()));
+            var s2 = new EnemySpecies("Robots", s2Pub, new Events.AggressiveReaction(), pos => new Enemy("steel_robot", "Steel Robot", 100, 11, 17, 7, pos, 'R', new NormalAttackType(), s2Pub, new Events.AggressiveReaction()));
+
+            return new EnemySpecies[] { s1, s1, s1, s2 };
+        }
     }
 }

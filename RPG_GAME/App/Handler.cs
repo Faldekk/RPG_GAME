@@ -11,10 +11,10 @@ namespace RPG_GAME.App
             next = nextHandler;
         }
 
-        public void Handle(InputCommand cmd, World world, Game? game)
+        // Return true if the command was processed and consumed a player turn
+        public bool Handle(InputCommand cmd, World world, Game? game)
         {
-            if (!Process(cmd, world, game))
-                next?.Handle(cmd, world, game);
+            return Process(cmd, world, game) || (next != null && next.Handle(cmd, world, game));
         }
 
         protected abstract bool Process(InputCommand cmd, World world, Game? game);

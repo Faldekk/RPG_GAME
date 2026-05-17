@@ -6,29 +6,29 @@ namespace RPG_GAME.App
     {
         private const string CombatHelpMessage = "Combat mode: use 1/2/3.";
 
-        public void Handle(InputCommand command, World world, GameState state)
+        public bool Handle(InputCommand command, World world, GameState state)
         {
             switch (command)
             {
                 case InputCommand.CombatNormalAttack:
                     ExecuteCombatRound(world, state, "normal");
-                    break;
+                    return true;
 
                 case InputCommand.CombatStealthAttack:
                     ExecuteCombatRound(world, state, "stealth");
-                    break;
+                    return true;
 
                 case InputCommand.CombatMagicalAttack:
                     ExecuteCombatRound(world, state, "magical");
-                    break;
+                    return true;
 
                 case InputCommand.Quit:
                     world.Stop();
-                    break;
+                    return false;
 
                 default:
                     world.AddMessage(CombatHelpMessage);
-                    break;
+                    return false;
             }
         }
 

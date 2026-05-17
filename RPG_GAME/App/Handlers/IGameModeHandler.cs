@@ -4,6 +4,7 @@ namespace RPG_GAME.App
 {
     public interface IGameModeHandler
     {
-        void Handle(InputCommand command, World world, GameState state);
+        // Return true if the handled command consumed a player turn
+        bool Handle(InputCommand command, World world, GameState state);
     }
 }
