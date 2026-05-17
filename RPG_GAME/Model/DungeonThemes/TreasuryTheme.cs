@@ -65,10 +65,9 @@ namespace RPG_GAME.Model.DungeonThemes
             pos => new Enemy("vault_guardian", "Vault Guardian", 125, 13, 20, 9, pos, 'V', new NormalAttackType())
         };
 
-        public Enemy CreateRandomEnemy(Vec2 position, Events.SpeciesDeathPublisher speciesPublisher)
+        public Enemy CreateRandomEnemy(Vec2 position)
         {
-            var baseEnemy = Templates[Random.Shared.Next(Templates.Length)](position);
-            return new Enemy(baseEnemy.SpeciesKey, baseEnemy.Name, baseEnemy.Health, baseEnemy.AttackMin, baseEnemy.AttackMax, baseEnemy.Armor, position, baseEnemy.MapCharacter, baseEnemy.AttackType, speciesPublisher, null);
+            return Templates[Random.Shared.Next(Templates.Length)](position);
         }
     }
 }

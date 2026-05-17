@@ -74,10 +74,9 @@ namespace RPG_GAME.Model.DungeonThemes
             pos => new Enemy("automaton_guard", "Automaton Guard", 120, 13, 19, 8, pos, 'G', new NormalAttackType())
         };
 
-        public Enemy CreateRandomEnemy(Vec2 position, Events.SpeciesDeathPublisher speciesPublisher)
+        public Enemy CreateRandomEnemy(Vec2 position)
         {
-            var baseEnemy = Templates[Random.Shared.Next(Templates.Length)](position);
-            return new Enemy(baseEnemy.SpeciesKey, baseEnemy.Name, baseEnemy.Health, baseEnemy.AttackMin, baseEnemy.AttackMax, baseEnemy.Armor, position, baseEnemy.MapCharacter, baseEnemy.AttackType, speciesPublisher, null);
+            return Templates[Random.Shared.Next(Templates.Length)](position);
         }
     }
 }

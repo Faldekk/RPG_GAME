@@ -222,30 +222,27 @@ namespace RPG_GAME.Model
                 var (y, x) = availableTiles[pickIndex];
                 availableTiles.RemoveAt(pickIndex);
 
-                // ensure species publisher exists
-                string tentativeSpeciesKey = "unknown";
-                // create or reuse a species publisher for group
-                Events.SpeciesDeathPublisher speciesPub = null;
-
-                // get a random template enemy first to read its species key via factory pattern - instead ask factory to attach species publisher
-                speciesPub = _speciesPublishers.ContainsKey("_default") ? _speciesPublishers["_default"] : null;
-                if (speciesPub == null)
-                {
-                    speciesPub = new Events.SpeciesDeathPublisher();
-                    _speciesPublishers["_default"] = speciesPub;
-                }
-
-                var enemy = _enemyFactory.CreateRandomEnemy(new Vec2(x, y), speciesPub);
-
+                var enemy = _enemyFactory.CreateRandomEnemy(new Vec2(x, y));
                 _tiles[y, x].Enemy = enemy;
 
-                // determine reaction strategy by simple heuristic on species key string
+                // Ensure there is a species publisher for this species
+                var sk = (enemy.SpeciesKey ?? string.Empty).ToLowerInvariant();
+                if (!_speciesPublishers.TryGetValue(sk, out var speciesPub))
+                {
+                    speciesPub = new SpeciesDeathPublisher();
+                    _speciesPublishers[sk] = speciesPub;
+                }
+
+                // Choose reaction strategy for the species (data-driven via species key)
                 Events.ISpeciesDeathReaction reaction;
-                var sk = enemy.SpeciesKey?.ToLowerInvariant() ?? string.Empty;
-                if (sk.Contains("goblin") || sk.Contains("bandit") || sk.Contains("apprentice") || sk.Contains("maintenance"))
+                if (sk.Contains("goblin") || sk.Contains("bandit") || sk.Contains("apprentice") || sk.Contains("drone"))
                     reaction = new Events.CowardlyReaction();
                 else
                     reaction = new Events.AggressiveReaction();
+
+                // Attach species publisher and reaction to enemy (so it can publish or know its group)
+                enemy.SetSpeciesPublisher(speciesPub);
+                enemy.SetSpeciesReaction(reaction);
 
                 var subs = new Events.EnemySubscriptions(enemy, _noisePublisher, speciesPub, _soundPropagation, reaction);
                 subs.Subscribe();

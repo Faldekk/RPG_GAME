@@ -84,11 +84,9 @@ namespace RPG_GAME.Model.DungeonThemes
             pos => new Enemy("archmage", "Archmage", 110, 12, 18, 6, pos, 'A', new MagicalAttackType())
         };
 
-        public Enemy CreateRandomEnemy(Vec2 position, Events.SpeciesDeathPublisher speciesPublisher)
+        public Enemy CreateRandomEnemy(Vec2 position)
         {
-            var baseEnemy = Templates[Random.Shared.Next(Templates.Length)](position);
-            // attach species publisher if provided
-            return new Enemy(baseEnemy.SpeciesKey, baseEnemy.Name, baseEnemy.Health, baseEnemy.AttackMin, baseEnemy.AttackMax, baseEnemy.Armor, position, baseEnemy.MapCharacter, baseEnemy.AttackType, speciesPublisher, null);
+            return Templates[Random.Shared.Next(Templates.Length)](position);
         }
     }
 }
