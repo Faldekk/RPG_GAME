@@ -6,6 +6,7 @@ using RPG_GAME.Model.Combat;
 using RPG_GAME.Model.DungeonBuilding;
 using RPG_GAME.Model.DungeonThemes;
 using RPG_GAME.UI;
+using RPG_GAME.Model.Events;
 
 namespace RPG_GAME.Model
 {
@@ -36,6 +37,16 @@ namespace RPG_GAME.Model
         public IReadOnlyList<BuildInstruction> AvailableInstructions => _availableInstructions;
         public string CurrentMessage { get; private set; } = string.Empty;
 
+        public static Tile[,] TilesForServices { get; private set; }
+
+        private NoisePublisher _noisePublisher;
+        private Sound.ISoundPropagation _soundPropagation;
+        private System.Collections.Generic.Dictionary<string, SpeciesDeathPublisher> _speciesPublishers;
+        private System.Collections.Generic.List<EnemySubscriptions> _enemySubscriptions;
+        private Model.Movement.IEnemyMovementStrategy _enemyMovementStrategy;
+
+        public INoiseEmitter NoiseEmitter { get; private set; }
+
         public World()
             : this(DungeonThemeFactory.CreateRandom())
         {
@@ -54,6 +65,7 @@ namespace RPG_GAME.Model
         private World(IDungeonTheme? theme, IDungeonStrategy strategy, IItemPool? itemPool, IEnemyFactory? enemyFactory)
         {
             _tiles = new Tile[Height, Width];
+            TilesForServices = _tiles;
             _theme = theme;
             _strategy = strategy;
             _itemPool = itemPool;
@@ -73,6 +85,14 @@ namespace RPG_GAME.Model
 
             var context = _strategy.Build(_tiles, Width, Height);
             SpawnPlayer(context);
+
+            // initialize event systems early so factories and spawn code can use them
+            _noisePublisher = new NoisePublisher();
+            NoiseEmitter = new NoiseEmitter(_noisePublisher);
+            _soundPropagation = new Sound.DungeonSoundPropagation();
+            _speciesPublishers = new System.Collections.Generic.Dictionary<string, SpeciesDeathPublisher>(StringComparer.OrdinalIgnoreCase);
+            _enemySubscriptions = new System.Collections.Generic.List<EnemySubscriptions>();
+            _enemyMovementStrategy = new Model.Movement.RandomWalkMovementStrategy();
 
             if (_theme != null && _itemPool != null && _enemyFactory != null)
             {
@@ -201,7 +221,35 @@ namespace RPG_GAME.Model
                 int pickIndex = Random.Shared.Next(availableTiles.Count);
                 var (y, x) = availableTiles[pickIndex];
                 availableTiles.RemoveAt(pickIndex);
-                _tiles[y, x].Enemy = _enemyFactory.CreateRandomEnemy(new Vec2(x, y));
+
+                // ensure species publisher exists
+                string tentativeSpeciesKey = "unknown";
+                // create or reuse a species publisher for group
+                Events.SpeciesDeathPublisher speciesPub = null;
+
+                // get a random template enemy first to read its species key via factory pattern - instead ask factory to attach species publisher
+                speciesPub = _speciesPublishers.ContainsKey("_default") ? _speciesPublishers["_default"] : null;
+                if (speciesPub == null)
+                {
+                    speciesPub = new Events.SpeciesDeathPublisher();
+                    _speciesPublishers["_default"] = speciesPub;
+                }
+
+                var enemy = _enemyFactory.CreateRandomEnemy(new Vec2(x, y), speciesPub);
+
+                _tiles[y, x].Enemy = enemy;
+
+                // determine reaction strategy by simple heuristic on species key string
+                Events.ISpeciesDeathReaction reaction;
+                var sk = enemy.SpeciesKey?.ToLowerInvariant() ?? string.Empty;
+                if (sk.Contains("goblin") || sk.Contains("bandit") || sk.Contains("apprentice") || sk.Contains("maintenance"))
+                    reaction = new Events.CowardlyReaction();
+                else
+                    reaction = new Events.AggressiveReaction();
+
+                var subs = new Events.EnemySubscriptions(enemy, _noisePublisher, speciesPub, _soundPropagation, reaction);
+                subs.Subscribe();
+                _enemySubscriptions.Add(subs);
             }
         }
 
@@ -280,11 +328,238 @@ namespace RPG_GAME.Model
                 ApplyWeaponBonuses(item);
                 tile.Item = null;
                 AddMessage($"Equipped {item.Name}.");
+
+                // emit noise for equipping weapon
+                if (NoiseEmitter != null)
+                {
+                    Events.NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
+                }
+
                 return true;
             }
 
             return TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
         }
+
+        public void ProcessEnemiesTurn()
+        {
+            // move each enemy once per player turn
+            var moved = new List<(Vec2 from, Vec2 to)>();
+            var tiles = _tiles;
+
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    var enemy = tiles[y, x].Enemy;
+                    if (enemy == null) continue;
+                    if (!enemy.IsAlive) continue;
+
+                    // don't move into player
+                    var playerPos = Player.Pos;
+                    // choose next
+                    var next = _enemyMovementStrategy.ChooseNextPosition(enemy, this);
+                    if (next.X == enemy.Position.X && next.Y == enemy.Position.Y) continue;
+                    if (next.X == playerPos.X && next.Y == playerPos.Y) continue;
+
+                    // ensure target tile still free
+                    var targetTile = tiles[next.Y, next.X];
+                    if (targetTile.IsWall || targetTile.Enemy != null) continue;
+
+                    // perform move
+                    tiles[y, x].Enemy = null;
+                    tiles[next.Y, next.X].Enemy = enemy;
+                    enemy.MoveTo(next);
+                }
+            }
+        }
+
+        public bool TryCombatRound(string attackKey)
+        {
+            if (ActiveEnemy == null)
+            {
+                AddMessage("No active enemy.");
+                return false;
+            }
+
+            if (!_attackTypes.TryGetValue(attackKey, out var attackType))
+            {
+                AddMessage("Unknown attack style.");
+                return false;
+            }
+
+            var weapon = ResolveActiveWeapon();
+            var enemyBeforeRound = ActiveEnemy;
+            var result = _combatEngine.ExecuteRound(Player, enemyBeforeRound, attackType, weapon);
+            AddMessage(result.Summary);
+            AddMessage($"Player attack dealt {result.PlayerDamageDealt} damage.");
+            AddMessage($"Enemy attack dealt {result.EnemyDamageDealt} damage.");
+
+            if (result.EnemyDefeated)
+            {
+                var defeatedPos = enemyBeforeRound.Position;
+
+                // publish species death event before removal
+                if (_speciesPublishers != null && _speciesPublishers.TryGetValue(enemyBeforeRound.SpeciesKey, out var pub))
+                {
+                    var ev = new Events.SpeciesDeathEvent(enemyBeforeRound, enemyBeforeRound.SpeciesKey);
+                    pub.Publish(ev);
+                }
+
+                // unsubscribe and remove subscriptions for this enemy
+                for (int i = _enemySubscriptions.Count - 1; i >= 0; i--)
+                {
+                    var s = _enemySubscriptions[i];
+                    if (s.OwnedBy(enemyBeforeRound))
+                    {
+                        s.Unsubscribe();
+                        _enemySubscriptions.RemoveAt(i);
+                    }
+                }
+
+                // Remove enemy from map and spawn loot
+                RemoveEnemyFromMap(enemyBeforeRound);
+                SpawnVictoryLoot(defeatedPos);
+                Player.Heal(50);
+                ActiveEnemy = null;
+                AddMessage("Enemy removed from map.");
+                AddMessage($"Enemy defeated: {enemyBeforeRound.Name}.");
+            }
+
+            if (result.PlayerDefeated)
+            {
+                AddMessage("You died. Game over.");
+                if (!string.IsNullOrWhiteSpace(GameLog.FilePath))
+                    AddMessage($"Log file: {GameLog.FilePath}");
+            }
+
+            return true;
+        }
+
+        private Items? ResolveActiveWeapon()
+        {
+            if (Player.Inventory.LeftHand != null)
+                return Player.Inventory.LeftHand;
+
+            return Player.Inventory.RightHand;
+        }
+
+        private void StartCombat(Enemy enemy)
+        {
+            ActiveEnemy = enemy;
+            AddMessage($"Encounter: {enemy.Name} | HP: {enemy.Health} | ATK: {enemy.AttackMin}-{enemy.AttackMax} | ARM: {enemy.Armor}");
+        }
+
+        private void RemoveEnemyFromMap(Enemy enemy)
+        {
+            var pos = enemy.Position;
+            if (pos.X >= 0 && pos.X < Width && pos.Y >= 0 && pos.Y < Height)
+                _tiles[pos.Y, pos.X].Enemy = null;
+        }
+
+        private void SpawnVictoryLoot(Vec2 center)
+        {
+            var candidates = new List<Vec2>();
+
+            for (int dy = -2; dy <= 2; dy++)
+            {
+                for (int dx = -2; dx <= 2; dx++)
+                {
+                    int x = center.X + dx;
+                    int y = center.Y + dy;
+
+                    if (x < 1 || x >= Width - 1 || y < 1 || y >= Height - 1)
+                        continue;
+
+                    if (_tiles[y, x].IsWall || _tiles[y, x].Enemy != null || _tiles[y, x].Item != null)
+                        continue;
+
+                    candidates.Add(new Vec2(x, y));
+                }
+            }
+
+            if (candidates.Count == 0)
+                return;
+
+            if (_itemPool != null)
+            {
+                PlaceLoot(candidates, pos => _itemPool.CreateRandomItem(pos));
+                return;
+            }
+
+            PlaceLoot(candidates, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(6, 16)));
+            PlaceLoot(candidates, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
+            PlaceLoot(candidates, pos => WeaponGenerator.GenerateRandomWeapon(pos));
+        }
+
+        private void PlaceLoot(List<Vec2> candidates, Func<Vec2, Items> factory)
+        {
+            if (candidates.Count == 0)
+                return;
+
+            int index = Random.Shared.Next(candidates.Count);
+            var pos = candidates[index];
+            candidates.RemoveAt(index);
+            _tiles[pos.Y, pos.X].Item = factory(pos);
+        }
+
+        public Items? CombineWeapons(Items weapon1, Items weapon2)
+        {
+            if (!weapon1.CanEquip || !weapon2.CanEquip)
+            {
+                AddMessage("Can only combine two weapons.");
+                return null;
+            }
+
+            var combinedName = $"{weapon1.Name} & {weapon2.Name}";
+            var combinedValue = weapon1.Value + weapon2.Value;
+
+            var strengthBonus = GetStatBonus(weapon1, "Strength") + GetStatBonus(weapon2, "Strength");
+            var dexterityBonus = GetStatBonus(weapon1, "Dexterity") + GetStatBonus(weapon2, "Dexterity");
+            var aggressionBonus = GetStatBonus(weapon1, "Agression") + GetStatBonus(weapon2, "Agression");
+            var wisdomBonus = GetStatBonus(weapon1, "Wisdom") + GetStatBonus(weapon2, "Wisdom");
+            var luckBonus = GetStatBonus(weapon1, "Luck") + GetStatBonus(weapon2, "Luck");
+
+            var combined = new WeaponItem(
+                combinedName,
+                "Combined",
+                combinedValue,
+                false,
+                strengthBonus,
+                dexterityBonus,
+                aggressionBonus,
+                wisdomBonus,
+                luckBonus,
+                weapon1.GetWeaponCategory());
+
+            AddMessage($"Combined into: {combined.Name} (DMG: {combined.Value})");
+            return combined;
+        }
+
+        private int GetStatBonus(Items weapon, string statName)
+        {
+            var stats = new PlayerStats();
+            weapon.ApplyEquipBonuses(stats);
+
+            return statName switch
+            {
+                "Strength" => stats.Strength - 10,
+                "Dexterity" => stats.Dexterity - 10,
+                "Agression" => stats.Aggression - 25,
+                "Wisdom" => stats.Wisdom,
+                "Luck" => stats.Luck - 50,
+                _ => 0
+            };
+        }
+
+        public bool IsAtCraftingStation()
+        {
+            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            return tile.IsCraftingStation;
+        }
+
+        public void Stop() => IsExitRequested = true;
+        public void Respawn() => Initialize();
 
         private bool TryStoreFromTile(Tile tile, Items item, string successMessage)
         {
@@ -323,6 +598,9 @@ namespace RPG_GAME.Model
 
             return false;
         }
+
+        private void ApplyWeaponBonuses(Items item) => item.ApplyEquipBonuses(Player.Stats);
+        private void RemoveWeaponBonuses(Items item) => item.RemoveEquipBonuses(Player.Stats);
 
         public bool TryBackpackAction()
         {
@@ -530,9 +808,6 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        private void ApplyWeaponBonuses(Items item) => item.ApplyEquipBonuses(Player.Stats);
-        private void RemoveWeaponBonuses(Items item) => item.RemoveEquipBonuses(Player.Stats);
-
         public bool CraftArmorFromJunk()
         {
             var junkIndexes = new List<int>();
@@ -557,171 +832,5 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        public bool TryCombatRound(string attackKey)
-        {
-            if (ActiveEnemy == null)
-            {
-                AddMessage("No active enemy.");
-                return false;
-            }
-
-            if (!_attackTypes.TryGetValue(attackKey, out var attackType))
-            {
-                AddMessage("Unknown attack style.");
-                return false;
-            }
-
-            var weapon = ResolveActiveWeapon();
-            var enemyBeforeRound = ActiveEnemy;
-            var result = _combatEngine.ExecuteRound(Player, enemyBeforeRound, attackType, weapon);
-            AddMessage(result.Summary);
-            AddMessage($"Player attack dealt {result.PlayerDamageDealt} damage.");
-            AddMessage($"Enemy attack dealt {result.EnemyDamageDealt} damage.");
-
-            if (result.EnemyDefeated)
-            {
-                var defeatedPos = enemyBeforeRound.Position;
-                RemoveEnemyFromMap(enemyBeforeRound);
-                SpawnVictoryLoot(defeatedPos);
-                Player.Heal(50);
-                ActiveEnemy = null;
-                AddMessage("Enemy removed from map.");
-                AddMessage($"Enemy defeated: {enemyBeforeRound.Name}.");
-            }
-
-            if (result.PlayerDefeated)
-            {
-                AddMessage("You died. Game over.");
-                if (!string.IsNullOrWhiteSpace(GameLog.FilePath))
-                    AddMessage($"Log file: {GameLog.FilePath}");
-            }
-
-            return true;
-        }
-
-        private Items? ResolveActiveWeapon()
-        {
-            if (Player.Inventory.LeftHand != null)
-                return Player.Inventory.LeftHand;
-
-            return Player.Inventory.RightHand;
-        }
-
-        private void StartCombat(Enemy enemy)
-        {
-            ActiveEnemy = enemy;
-            AddMessage($"Encounter: {enemy.Name} | HP: {enemy.Health} | ATK: {enemy.AttackMin}-{enemy.AttackMax} | ARM: {enemy.Armor}");
-        }
-
-        private void RemoveEnemyFromMap(Enemy enemy)
-        {
-            var pos = enemy.Position;
-            if (pos.X >= 0 && pos.X < Width && pos.Y >= 0 && pos.Y < Height)
-                _tiles[pos.Y, pos.X].Enemy = null;
-        }
-
-        private void SpawnVictoryLoot(Vec2 center)
-        {
-            var candidates = new List<Vec2>();
-
-            for (int dy = -2; dy <= 2; dy++)
-            {
-                for (int dx = -2; dx <= 2; dx++)
-                {
-                    int x = center.X + dx;
-                    int y = center.Y + dy;
-
-                    if (x < 1 || x >= Width - 1 || y < 1 || y >= Height - 1)
-                        continue;
-
-                    if (_tiles[y, x].IsWall || _tiles[y, x].Enemy != null || _tiles[y, x].Item != null)
-                        continue;
-
-                    candidates.Add(new Vec2(x, y));
-                }
-            }
-
-            if (candidates.Count == 0)
-                return;
-
-            if (_itemPool != null)
-            {
-                PlaceLoot(candidates, pos => _itemPool.CreateRandomItem(pos));
-                return;
-            }
-
-            PlaceLoot(candidates, pos => ItemGenerator.CreateCoins(pos, Random.Shared.Next(6, 16)));
-            PlaceLoot(candidates, pos => ItemGenerator.CreateGold(pos, Random.Shared.Next(1, 5)));
-            PlaceLoot(candidates, pos => WeaponGenerator.GenerateRandomWeapon(pos));
-        }
-
-        private void PlaceLoot(List<Vec2> candidates, Func<Vec2, Items> factory)
-        {
-            if (candidates.Count == 0)
-                return;
-
-            int index = Random.Shared.Next(candidates.Count);
-            var pos = candidates[index];
-            candidates.RemoveAt(index);
-            _tiles[pos.Y, pos.X].Item = factory(pos);
-        }
-
-        public Items? CombineWeapons(Items weapon1, Items weapon2)
-        {
-            if (!weapon1.CanEquip || !weapon2.CanEquip)
-            {
-                AddMessage("Can only combine two weapons.");
-                return null;
-            }
-
-            var combinedName = $"{weapon1.Name} & {weapon2.Name}";
-            var combinedValue = weapon1.Value + weapon2.Value;
-
-            var strengthBonus = GetStatBonus(weapon1, "Strength") + GetStatBonus(weapon2, "Strength");
-            var dexterityBonus = GetStatBonus(weapon1, "Dexterity") + GetStatBonus(weapon2, "Dexterity");
-            var aggressionBonus = GetStatBonus(weapon1, "Agression") + GetStatBonus(weapon2, "Agression");
-            var wisdomBonus = GetStatBonus(weapon1, "Wisdom") + GetStatBonus(weapon2, "Wisdom");
-            var luckBonus = GetStatBonus(weapon1, "Luck") + GetStatBonus(weapon2, "Luck");
-
-            var combined = new WeaponItem(
-                combinedName,
-                "Combined",
-                combinedValue,
-                false,
-                strengthBonus,
-                dexterityBonus,
-                aggressionBonus,
-                wisdomBonus,
-                luckBonus,
-                weapon1.GetWeaponCategory());
-
-            AddMessage($"Combined into: {combined.Name} (DMG: {combined.Value})");
-            return combined;
-        }
-
-        private int GetStatBonus(Items weapon, string statName)
-        {
-            var stats = new PlayerStats();
-            weapon.ApplyEquipBonuses(stats);
-
-            return statName switch
-            {
-                "Strength" => stats.Strength - 10,
-                "Dexterity" => stats.Dexterity - 10,
-                "Agression" => stats.Aggression - 25,
-                "Wisdom" => stats.Wisdom,
-                "Luck" => stats.Luck - 50,
-                _ => 0
-            };
-        }
-
-        public bool IsAtCraftingStation()
-        {
-            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
-            return tile.IsCraftingStation;
-        }
-
-        public void Stop() => IsExitRequested = true;
-        public void Respawn() => Initialize();
     }
 }

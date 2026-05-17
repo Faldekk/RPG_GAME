@@ -69,14 +69,15 @@ namespace RPG_GAME.Model.DungeonThemes
     {
         private static readonly Func<Vec2, Enemy>[] Templates =
         {
-            pos => new Enemy("Maintenance Drone", 80, 9, 15, 5, pos, 'D', new NormalAttackType()),
-            pos => new Enemy("Steel Robot", 100, 11, 17, 7, pos, 'R', new NormalAttackType()),
-            pos => new Enemy("Automaton Guard", 120, 13, 19, 8, pos, 'G', new NormalAttackType())
+            pos => new Enemy("maintenance_drone", "Maintenance Drone", 80, 9, 15, 5, pos, 'D', new NormalAttackType()),
+            pos => new Enemy("steel_robot", "Steel Robot", 100, 11, 17, 7, pos, 'R', new NormalAttackType()),
+            pos => new Enemy("automaton_guard", "Automaton Guard", 120, 13, 19, 8, pos, 'G', new NormalAttackType())
         };
 
-        public Enemy CreateRandomEnemy(Vec2 position)
+        public Enemy CreateRandomEnemy(Vec2 position, Events.SpeciesDeathPublisher speciesPublisher)
         {
-            return Templates[Random.Shared.Next(Templates.Length)](position);
+            var baseEnemy = Templates[Random.Shared.Next(Templates.Length)](position);
+            return new Enemy(baseEnemy.SpeciesKey, baseEnemy.Name, baseEnemy.Health, baseEnemy.AttackMin, baseEnemy.AttackMax, baseEnemy.Armor, position, baseEnemy.MapCharacter, baseEnemy.AttackType, speciesPublisher, null);
         }
     }
 }

@@ -60,14 +60,15 @@ namespace RPG_GAME.Model.DungeonThemes
     {
         private static readonly Func<Vec2, Enemy>[] Templates =
         {
-            pos => new Enemy("Animated Safe", 95, 10, 16, 6, pos, 'S', new NormalAttackType()),
-            pos => new Enemy("Rogue Briefcase", 85, 9, 15, 5, pos, 'B', new StealthAttackType()),
-            pos => new Enemy("Vault Guardian", 125, 13, 20, 9, pos, 'V', new NormalAttackType())
+            pos => new Enemy("animated_safe", "Animated Safe", 95, 10, 16, 6, pos, 'S', new NormalAttackType()),
+            pos => new Enemy("rogue_briefcase", "Rogue Briefcase", 85, 9, 15, 5, pos, 'B', new StealthAttackType()),
+            pos => new Enemy("vault_guardian", "Vault Guardian", 125, 13, 20, 9, pos, 'V', new NormalAttackType())
         };
 
-        public Enemy CreateRandomEnemy(Vec2 position)
+        public Enemy CreateRandomEnemy(Vec2 position, Events.SpeciesDeathPublisher speciesPublisher)
         {
-            return Templates[Random.Shared.Next(Templates.Length)](position);
+            var baseEnemy = Templates[Random.Shared.Next(Templates.Length)](position);
+            return new Enemy(baseEnemy.SpeciesKey, baseEnemy.Name, baseEnemy.Health, baseEnemy.AttackMin, baseEnemy.AttackMax, baseEnemy.Armor, position, baseEnemy.MapCharacter, baseEnemy.AttackType, speciesPublisher, null);
         }
     }
 }

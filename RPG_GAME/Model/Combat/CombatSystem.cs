@@ -6,6 +6,7 @@ namespace RPG_GAME.Model.Combat
     {
         int CalculateDamage(PlayerStats stats, IAttackType attackType, int baseDamage);
         int CalculateDefense(PlayerStats stats, IAttackType attackType);
+        int GetNoiseRange();
     }
 
     public interface IAttackType
@@ -41,6 +42,8 @@ namespace RPG_GAME.Model.Combat
         {
             return attackType.ModifyDefense(this, stats);
         }
+
+        public int GetNoiseRange() => 8;
     }
 
     public sealed class LightWeaponCategory : IWeaponCategory
@@ -61,6 +64,8 @@ namespace RPG_GAME.Model.Combat
         {
             return attackType.ModifyDefense(this, stats);
         }
+
+        public int GetNoiseRange() => 2;
     }
 
     public sealed class MagicalWeaponCategory : IWeaponCategory
@@ -81,6 +86,8 @@ namespace RPG_GAME.Model.Combat
         {
             return attackType.ModifyDefense(this, stats);
         }
+
+        public int GetNoiseRange() => 5;
     }
 
     public sealed class NoWeaponCategory : IWeaponCategory
@@ -100,6 +107,8 @@ namespace RPG_GAME.Model.Combat
         {
             return attackType.ModifyDefense(this, stats);
         }
+
+        public int GetNoiseRange() => 0;
     }
 
     public sealed class NormalAttackType : IAttackType

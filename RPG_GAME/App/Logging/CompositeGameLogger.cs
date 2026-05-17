@@ -32,13 +32,12 @@ namespace RPG_GAME.App.Logging
         {
             if (entry == null)
                 return;
-
             IGameLogger[] snapshot;
+
             lock (_sync)
             {
                 snapshot = _loggers.ToArray();
             }
-
             foreach (var logger in snapshot)
                 logger.Log(entry);
         }

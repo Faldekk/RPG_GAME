@@ -235,7 +235,6 @@ namespace RPG_GAME.UI
         private int RenderHeader(int panelX, int startRow)
         {
             _buffer.PutString(startRow++, panelX, "RPG Game or sum");
-            _buffer.PutString(startRow++, panelX, "by Faldekk");
             return startRow + 1;
         }
 

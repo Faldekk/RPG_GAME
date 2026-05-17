@@ -1,4 +1,5 @@
 using System;
+using RPG_GAME.Model.Events;
 
 namespace RPG_GAME.Model.Combat
 {
@@ -7,17 +8,23 @@ namespace RPG_GAME.Model.Combat
         private readonly Random _random;
 
         public string Name { get; }
+        public string SpeciesKey { get; }
         public int Health { get; private set; }
         public int AttackMin { get; }
         public int AttackMax { get; }
-        public int Armor { get; }
+        public int Armor { get; private set; }
         public Vec2 Position { get; private set; }
         public char MapCharacter { get; }
         public bool IsAlive => Health > 0;
         public IAttackType AttackType { get; }
 
-        public Enemy(string name, int health, int attackMin, int attackMax, int armor, Vec2 position, char mapCharacter, IAttackType attackType)
+        // Optional species-level event publisher and reaction strategy
+        public SpeciesDeathPublisher? SpeciesPublisher { get; }
+        public ISpeciesDeathReaction? SpeciesReaction { get; }
+
+        public Enemy(string speciesKey, string name, int health, int attackMin, int attackMax, int armor, Vec2 position, char mapCharacter, IAttackType attackType, SpeciesDeathPublisher? speciesPublisher = null, ISpeciesDeathReaction? speciesReaction = null)
         {
+            SpeciesKey = speciesKey ?? name;
             Name = name;
             Health = Math.Max(1, health);
             AttackMin = Math.Max(1, attackMin);
@@ -26,6 +33,8 @@ namespace RPG_GAME.Model.Combat
             Position = position;
             MapCharacter = mapCharacter;
             AttackType = attackType;
+            SpeciesPublisher = speciesPublisher;
+            SpeciesReaction = speciesReaction;
             _random = Random.Shared;
         }
 
@@ -36,7 +45,13 @@ namespace RPG_GAME.Model.Combat
 
         public void TakeDamage(int amount)
         {
-            Health = Math.Max(0, Health - Math.Max(0, amount));
+            int dmg = Math.Max(0, amount);
+            Health = Math.Max(0, Health - dmg);
+        }
+
+        public void ModifyHealth(int delta)
+        {
+            Health = Math.Max(0, Health + delta);
         }
 
         public void MoveTo(Vec2 position)

@@ -9,9 +9,9 @@ namespace RPG_GAME.Model.Combat
 
         private static readonly List<Func<Vec2, Enemy>> _templates = new()
         {
-            pos => new Enemy("Goblin", health: 80, attackMin: 10, attackMax: 16, armor: 7, position: pos, mapCharacter: 'G', attackType: new NormalAttackType()),
-            pos => new Enemy("Bandit", health: 100, attackMin: 12, attackMax: 18, armor: 8, position: pos, mapCharacter: 'B', attackType: new StealthAttackType()),
-            pos => new Enemy("Cultist", health: 95, attackMin: 11, attackMax: 17, armor: 6, position: pos, mapCharacter: 'C', attackType: new MagicalAttackType())
+            pos => new Enemy("goblin", "Goblin", health: 80, attackMin: 10, attackMax: 16, armor: 7, position: pos, mapCharacter: 'G', attackType: new NormalAttackType()),
+            pos => new Enemy("bandit", "Bandit", health: 100, attackMin: 12, attackMax: 18, armor: 8, position: pos, mapCharacter: 'B', attackType: new StealthAttackType()),
+            pos => new Enemy("cultist", "Cultist", health: 95, attackMin: 11, attackMax: 17, armor: 6, position: pos, mapCharacter: 'C', attackType: new MagicalAttackType())
         };
 
         public static Enemy Generate(Vec2 position)

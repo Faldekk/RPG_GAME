@@ -79,14 +79,16 @@ namespace RPG_GAME.Model.DungeonThemes
     {
         private static readonly Func<Vec2, Enemy>[] Templates =
         {
-            pos => new Enemy("Apprentice Mage", 70, 8, 14, 4, pos, 'M', new MagicalAttackType()),
-            pos => new Enemy("Runic Sage", 90, 10, 16, 5, pos, 'S', new MagicalAttackType()),
-            pos => new Enemy("Archmage", 110, 12, 18, 6, pos, 'A', new MagicalAttackType())
+            pos => new Enemy("apprentice_mage", "Apprentice Mage", 70, 8, 14, 4, pos, 'M', new MagicalAttackType()),
+            pos => new Enemy("runic_sage", "Runic Sage", 90, 10, 16, 5, pos, 'S', new MagicalAttackType()),
+            pos => new Enemy("archmage", "Archmage", 110, 12, 18, 6, pos, 'A', new MagicalAttackType())
         };
 
-        public Enemy CreateRandomEnemy(Vec2 position)
+        public Enemy CreateRandomEnemy(Vec2 position, Events.SpeciesDeathPublisher speciesPublisher)
         {
-            return Templates[Random.Shared.Next(Templates.Length)](position);
+            var baseEnemy = Templates[Random.Shared.Next(Templates.Length)](position);
+            // attach species publisher if provided
+            return new Enemy(baseEnemy.SpeciesKey, baseEnemy.Name, baseEnemy.Health, baseEnemy.AttackMin, baseEnemy.AttackMax, baseEnemy.Armor, position, baseEnemy.MapCharacter, baseEnemy.AttackType, speciesPublisher, null);
         }
     }
 }

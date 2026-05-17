@@ -9,8 +9,7 @@ namespace RPG_GAME.App.Logging
 
         public LogEntry(string message)
             : this(DateTime.Now, message)
-        {
-        }
+        {}
 
         public LogEntry(DateTime timestamp, string message)
         {
