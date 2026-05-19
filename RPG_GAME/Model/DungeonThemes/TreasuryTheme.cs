@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RPG_GAME.Model;
 using RPG_GAME.Model.Combat;
 using RPG_GAME.Model.DungeonBuilding;
@@ -63,7 +64,7 @@ namespace RPG_GAME.Model.DungeonThemes
             return CreateSpeciesSpawnPlan()[Random.Shared.Next(CreateSpeciesSpawnPlan().Count)].CreateEnemy(position);
         }
 
-        public System.Collections.Generic.IReadOnlyList<EnemySpeciesSpawnPlan> CreateSpeciesSpawnPlan()
+        public IReadOnlyList<EnemySpeciesSpawnPlan> CreateSpeciesSpawnPlan()
         {
             var briefcasePub = new Events.SpeciesDeathPublisher();
             var safePub = new Events.SpeciesDeathPublisher();

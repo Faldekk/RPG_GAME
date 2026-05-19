@@ -221,7 +221,6 @@ namespace RPG_GAME.UI
                     }
                 }
             }
-
             row += 2;
             row = RenderInventoryControls(row);
         }
