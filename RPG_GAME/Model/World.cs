@@ -41,8 +41,8 @@ namespace RPG_GAME.Model
 
         private NoisePublisher _noisePublisher;
         private Sound.ISoundPropagation _soundPropagation;
-        private System.Collections.Generic.Dictionary<string, SpeciesDeathPublisher> _speciesPublishers;
-        private System.Collections.Generic.List<EnemySubscriptions> _enemySubscriptions;
+        private Dictionary<string, SpeciesDeathPublisher> _speciesPublishers;
+        private List<EnemySubscriptions> _enemySubscriptions;
         private Model.Movement.IEnemyMovementStrategy _enemyMovementStrategy;
 
         public INoiseEmitter NoiseEmitter { get; private set; }
@@ -93,8 +93,8 @@ namespace RPG_GAME.Model
             _noisePublisher = new NoisePublisher();
             NoiseEmitter = new NoiseEmitter(_noisePublisher);
             _soundPropagation = new Sound.DungeonSoundPropagation();
-            _speciesPublishers = new System.Collections.Generic.Dictionary<string, SpeciesDeathPublisher>(StringComparer.OrdinalIgnoreCase);
-            _enemySubscriptions = new System.Collections.Generic.List<EnemySubscriptions>();
+            _speciesPublishers = new Dictionary<string, SpeciesDeathPublisher>(StringComparer.OrdinalIgnoreCase);
+            _enemySubscriptions = new List<EnemySubscriptions>();
             _enemyMovementStrategy = new Model.Movement.RandomWalkMovementStrategy();
 
             if (_theme != null && _itemPool != null && _enemyFactory != null)
