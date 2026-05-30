@@ -20,7 +20,7 @@ namespace RPG_GAME.UI
             _buffer = new ConsoleBuffer(bufferHeight, bufferWidth);
         }
 
-        public void Render(World world, GameMode mode, int selectedInventoryIndex, int craftingFirstSelection = -1)
+        public void Render(World world, GameMode mode, int selectedInventoryIndex, int craftingFirstSelection = -1, GameTimer? timer = null)
         {
             _buffer.Clear();
 
@@ -41,11 +41,14 @@ namespace RPG_GAME.UI
                 case GameModeKind.Journal:
                     RenderJournal();
                     break;
+                case GameModeKind.Won:
+                    RenderWonScreen(timer);
+                    break;
                 default:
                     RenderMap(world);
                     RenderPlayer(world.Player);
                     RenderBottomControls(world);
-                    RenderUI(world.Player, world);
+                    RenderUI(world.Player, world, timer);
                     RenderRecentLogsBottom();
                     break;
             }
@@ -174,7 +177,7 @@ namespace RPG_GAME.UI
             _buffer.PutString(row, col, "[ESC] Close");
         }
 
-        private void RenderUI(Player player, World world)
+        private void RenderUI(Player player, World world, GameTimer? timer = null)
         {
             int currentRow = 0;
             int panelX = World.Width + 2;
@@ -184,6 +187,10 @@ namespace RPG_GAME.UI
             var tile = world.GetTile(y, x);
 
             currentRow = RenderHeader(panelX, currentRow);
+            if (timer != null)
+            {
+                currentRow = RenderTimer(panelX, currentRow, timer);
+            }
             currentRow = RenderCurrentTileInfo(panelX, currentRow, tile.Item);
             currentRow = RenderCurrency(player, panelX, currentRow);
             currentRow = RenderStats(player, panelX, currentRow);
@@ -457,6 +464,37 @@ namespace RPG_GAME.UI
             _buffer.PutString(row++, col, "[S/↓] Previous weapon");
             _buffer.PutString(row++, col, "[E] Combine selected with next");
             _buffer.PutString(row++, col, "[ESC] Leave station");
+        }
+
+        private int RenderTimer(int panelX, int startRow, GameTimer timer)
+        {
+            _buffer.PutString(startRow++, panelX, "=== TIME ===");
+            _buffer.PutString(startRow++, panelX, $"Elapsed: {timer.FormatTime()}");
+            return startRow + 1;
+        }
+
+        private void RenderWonScreen(GameTimer? timer)
+        {
+            int centerRow = World.Height / 2;
+            int centerCol = World.Width / 2;
+
+            _buffer.PutString(centerRow - 3, centerCol - 10, "╔════════════════════╗");
+            _buffer.PutString(centerRow - 2, centerCol - 10, "║      YOU WON!      ║");
+            _buffer.PutString(centerRow - 1, centerCol - 10, "║                    ║");
+
+            if (timer != null)
+            {
+                string timeStr = $"Time: {timer.FormatTime()}";
+                int timeCol = centerCol - timeStr.Length / 2;
+                _buffer.PutString(centerRow, timeCol, timeStr);
+            }
+
+            _buffer.PutString(centerRow + 1, centerCol - 10, "║                    ║");
+            _buffer.PutString(centerRow + 2, centerCol - 10, "║     All enemies    ║");
+            _buffer.PutString(centerRow + 3, centerCol - 10, "║ have been defeated ║");
+            _buffer.PutString(centerRow + 4, centerCol - 10, "╚════════════════════╝");
+
+            _buffer.PutString(World.Height - 2, 2, "[Q] Quit");
         }
     }
 

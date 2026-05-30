@@ -371,12 +371,18 @@ namespace RPG_GAME.Model
             return tile.IsCraftingStation;
         }
 
+        public bool IsAtCraftingStation(Player player)
+        {
+            var tile = GetTile(player.Pos.Y, player.Pos.X);
+            return tile.IsCraftingStation;
+        }
+
         public void Stop() => IsExitRequested = true;
         public void Respawn() => Initialize();
 
-        private bool TryStoreFromTile(Tile tile, Items item, string successMessage)
+        private bool TryStoreFromTile(Player player, Tile tile, Items item, string successMessage)
         {
-            if (!Player.Inventory.AddToBackpack(item))
+            if (!player.Inventory.AddToBackpack(item))
             {
                 AddMessage("Backpack full.");
                 return false;
@@ -387,49 +393,59 @@ namespace RPG_GAME.Model
             return true;
         }
 
-        private bool TryEquipWeapon(Items item)
+        private bool TryEquipWeapon(Player player, Items item)
         {
             if (!item.CanEquip)
                 return false;
 
             if (item.IsTwoHanded)
             {
-                if (Player.Inventory.LeftHand != null || Player.Inventory.RightHand != null)
+                if (player.Inventory.LeftHand != null || player.Inventory.RightHand != null)
                     return false;
 
-                return Player.Inventory.EquipItem(item, 0);
+                return player.Inventory.EquipItem(item, 0);
             }
 
-            if (Player.Inventory.HasTwoHandedWeapon)
+            if (player.Inventory.HasTwoHandedWeapon)
                 return false;
 
-            if (Player.Inventory.LeftHand == null)
-                return Player.Inventory.EquipItem(item, 0);
+            if (player.Inventory.LeftHand == null)
+                return player.Inventory.EquipItem(item, 0);
 
-            if (Player.Inventory.RightHand == null)
-                return Player.Inventory.EquipItem(item, 1);
+            if (player.Inventory.RightHand == null)
+                return player.Inventory.EquipItem(item, 1);
 
             return false;
         }
 
-        private void ApplyWeaponBonuses(Items item) => item.ApplyEquipBonuses(Player.Stats);
-        private void RemoveWeaponBonuses(Items item) => item.RemoveEquipBonuses(Player.Stats);
+        private static void ApplyWeaponBonuses(Player player, Items item) => item.ApplyEquipBonuses(player.Stats);
+        private static void RemoveWeaponBonuses(Player player, Items item) => item.RemoveEquipBonuses(player.Stats);
 
         public bool TryBackpackAction()
         {
-            int count = Player.Inventory.Count();
+            return TryBackpackAction(Player);
+        }
+
+        public bool TryBackpackAction(Player player)
+        {
+            int count = player.Inventory.Count();
             if (count == 0)
             {
                 AddMessage("Backpack is empty.");
                 return false;
             }
 
-            return DropFromBackpack(count - 1);
+            return DropFromBackpack(player, count - 1);
         }
 
         public bool EquipFromBackpack(int index)
         {
-            var selected = Player.Inventory.GetItem(index);
+            return EquipFromBackpack(Player, index);
+        }
+
+        public bool EquipFromBackpack(Player player, int index)
+        {
+            var selected = player.Inventory.GetItem(index);
             if (selected == null)
             {
                 AddMessage("No item selected.");
@@ -443,89 +459,89 @@ namespace RPG_GAME.Model
             }
 
             return selected.IsTwoHanded
-                ? EquipTwoHandedFromBackpack(index)
-                : EquipOneHandedFromBackpack(index);
+                ? EquipTwoHandedFromBackpack(player, index)
+                : EquipOneHandedFromBackpack(player, index);
         }
 
-        private bool EquipTwoHandedFromBackpack(int index)
+        private bool EquipTwoHandedFromBackpack(Player player, int index)
         {
-            var left = Player.Inventory.LeftHand;
-            var right = Player.Inventory.RightHand;
+            var left = player.Inventory.LeftHand;
+            var right = player.Inventory.RightHand;
 
             int requiredSlots = (left != null ? 1 : 0) + (right != null ? 1 : 0);
-            if (Player.Inventory.Count() - 1 + requiredSlots > Player.Inventory.MaxBackpackSize)
+            if (player.Inventory.Count() - 1 + requiredSlots > player.Inventory.MaxBackpackSize)
             {
                 AddMessage("Backpack full.");
                 return false;
             }
 
-            var backpackItem = Player.Inventory.TakeFromBackpack(index);
+            var backpackItem = player.Inventory.TakeFromBackpack(index);
             if (backpackItem == null)
             {
                 AddMessage("Cannot equip selected item.");
                 return false;
             }
 
-            var unequippedLeft = Player.Inventory.UnequipItem(0);
-            var unequippedRight = Player.Inventory.UnequipItem(1);
+            var unequippedLeft = player.Inventory.UnequipItem(0);
+            var unequippedRight = player.Inventory.UnequipItem(1);
 
             if (unequippedLeft != null)
-                RemoveWeaponBonuses(unequippedLeft);
+                RemoveWeaponBonuses(player, unequippedLeft);
             if (unequippedRight != null)
-                RemoveWeaponBonuses(unequippedRight);
+                RemoveWeaponBonuses(player, unequippedRight);
 
             if (unequippedLeft != null)
-                Player.Inventory.AddToBackpack(unequippedLeft);
+                player.Inventory.AddToBackpack(unequippedLeft);
             if (unequippedRight != null)
-                Player.Inventory.AddToBackpack(unequippedRight);
+                player.Inventory.AddToBackpack(unequippedRight);
 
-            Player.Inventory.EquipItem(backpackItem, 0);
-            ApplyWeaponBonuses(backpackItem);
+            player.Inventory.EquipItem(backpackItem, 0);
+            ApplyWeaponBonuses(player, backpackItem);
             AddMessage($"Equipped {backpackItem.Name}.");
             return true;
         }
 
-        private bool EquipOneHandedFromBackpack(int index)
+        private bool EquipOneHandedFromBackpack(Player player, int index)
         {
-            var backpackItem = Player.Inventory.TakeFromBackpack(index);
+            var backpackItem = player.Inventory.TakeFromBackpack(index);
             if (backpackItem == null)
             {
                 AddMessage("Cannot equip selected item.");
                 return false;
             }
 
-            int handIndex = GetOneHandEquipSlot();
-            var displaced = Player.Inventory.UnequipItem(handIndex);
+            int handIndex = GetOneHandEquipSlot(player);
+            var displaced = player.Inventory.UnequipItem(handIndex);
 
             if (displaced != null)
             {
-                RemoveWeaponBonuses(displaced);
+                RemoveWeaponBonuses(player, displaced);
 
-                if (!Player.Inventory.AddToBackpack(displaced))
+                if (!player.Inventory.AddToBackpack(displaced))
                 {
-                    ApplyWeaponBonuses(displaced);
-                    Player.Inventory.EquipItem(displaced, handIndex);
-                    Player.Inventory.AddToBackpack(backpackItem);
+                    ApplyWeaponBonuses(player, displaced);
+                    player.Inventory.EquipItem(displaced, handIndex);
+                    player.Inventory.AddToBackpack(backpackItem);
                     AddMessage("Backpack full.");
                     return false;
                 }
             }
 
-            if (!Player.Inventory.EquipItem(backpackItem, handIndex))
+            if (!player.Inventory.EquipItem(backpackItem, handIndex))
             {
-                var rollback = Player.Inventory.TakeFromBackpack(Player.Inventory.Count() - 1);
+                var rollback = player.Inventory.TakeFromBackpack(player.Inventory.Count() - 1);
                 if (rollback != null)
                 {
-                    ApplyWeaponBonuses(rollback);
-                    Player.Inventory.EquipItem(rollback, handIndex);
+                    ApplyWeaponBonuses(player, rollback);
+                    player.Inventory.EquipItem(rollback, handIndex);
                 }
 
-                Player.Inventory.AddToBackpack(backpackItem);
+                player.Inventory.AddToBackpack(backpackItem);
                 AddMessage("Cannot equip selected item.");
                 return false;
             }
 
-            ApplyWeaponBonuses(backpackItem);
+            ApplyWeaponBonuses(player, backpackItem);
             AddMessage($"Equipped {backpackItem.Name}.");
             return true;
         }
@@ -567,7 +583,12 @@ namespace RPG_GAME.Model
 
         public bool DropFromBackpack(int index)
         {
-            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            return DropFromBackpack(Player, index);
+        }
+
+        public bool DropFromBackpack(Player player, int index)
+        {
+            var tile = GetTile(player.Pos.Y, player.Pos.X);
             if (tile.Item != null)
             {
                 AddMessage("Cannot drop: tile already has an item.");
@@ -580,14 +601,14 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            var item = Player.Inventory.TakeFromBackpack(index);
+            var item = player.Inventory.TakeFromBackpack(index);
             if (item == null)
             {
                 AddMessage("No item selected.");
                 return false;
             }
 
-            item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+            item.Position = new Tuple<int, int>(player.Pos.X, player.Pos.Y);
             tile.Item = item;
             AddMessage($"Dropped {item.Name}.");
             return true;
@@ -595,27 +616,37 @@ namespace RPG_GAME.Model
 
         public bool UseFromBackpack(int index)
         {
-            var item = Player.Inventory.GetItem(index);
+            return UseFromBackpack(Player, index);
+        }
+
+        public bool UseFromBackpack(Player player, int index)
+        {
+            var item = player.Inventory.GetItem(index);
             if (item == null)
             {
                 AddMessage("No item selected.");
                 return false;
             }
 
-            if (!item.TryUse(Player, out var useMessage))
+            if (!item.TryUse(player, out var useMessage))
             {
                 AddMessage(useMessage);
                 return false;
             }
 
-            Player.Inventory.RemoveFromBackpack(index);
+            player.Inventory.RemoveFromBackpack(index);
             AddMessage(useMessage);
             return true;
         }
 
         public bool TryDropItem(int handIndex)
         {
-            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            return TryDropItem(Player, handIndex);
+        }
+
+        public bool TryDropItem(Player player, int handIndex)
+        {
+            var tile = GetTile(player.Pos.Y, player.Pos.X);
             if (tile.Item != null)
             {
                 AddMessage("Cannot drop: tile already has an item.");
@@ -628,15 +659,15 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            var item = Player.Inventory.UnequipItem(handIndex);
+            var item = player.Inventory.UnequipItem(handIndex);
             if (item == null)
             {
                 AddMessage("Cannot drop: selected hand is empty.");
                 return false;
             }
 
-            RemoveWeaponBonuses(item);
-            item.Position = new Tuple<int, int>(Player.Pos.X, Player.Pos.Y);
+            RemoveWeaponBonuses(player, item);
+            item.Position = new Tuple<int, int>(player.Pos.X, player.Pos.Y);
             tile.Item = item;
             AddMessage($"Dropped {item.Name}.");
             return true;
@@ -644,10 +675,15 @@ namespace RPG_GAME.Model
 
         public bool CraftArmorFromJunk()
         {
+            return CraftArmorFromJunk(Player);
+        }
+
+        public bool CraftArmorFromJunk(Player player)
+        {
             var junkIndexes = new List<int>();
-            for (int i = 0; i < Player.Inventory.Count(); i++)
+            for (int i = 0; i < player.Inventory.Count(); i++)
             {
-                var item = Player.Inventory.GetItem(i);
+                var item = player.Inventory.GetItem(i);
                 if (item != null && item.CanBeCraftingMaterial)
                     junkIndexes.Add(i);
             }
@@ -659,10 +695,10 @@ namespace RPG_GAME.Model
             }
 
             junkIndexes.Sort((a, b) => b.CompareTo(a));
-            Player.Inventory.RemoveFromBackpack(junkIndexes[0]);
-            Player.Inventory.RemoveFromBackpack(junkIndexes[1]);
-            Player.Stats.Armor += 2;
-            AddMessage($"Crafted armor from junk. Armor is now {Player.Stats.Armor}.");
+            player.Inventory.RemoveFromBackpack(junkIndexes[0]);
+            player.Inventory.RemoveFromBackpack(junkIndexes[1]);
+            player.Stats.Armor += 2;
+            AddMessage($"Crafted armor from junk. Armor is now {player.Stats.Armor}.");
             return true;
         }
 
@@ -689,7 +725,12 @@ namespace RPG_GAME.Model
 
         public bool TryMovePlayer(int dx, int dy)
         {
-            var next = Player.Pos.Add(dx, dy);
+            return TryMovePlayer(Player, dx, dy, null);
+        }
+
+        public bool TryMovePlayer(Player player, int dx, int dy, IEnumerable<Player>? otherPlayers = null)
+        {
+            var next = player.Pos.Add(dx, dy);
 
             if (next.X < 0 || next.X >= Width || next.Y < 0 || next.Y >= Height)
             {
@@ -704,19 +745,44 @@ namespace RPG_GAME.Model
                 return false;
             }
 
+            if (IsOccupiedByOtherPlayer(next, player, otherPlayers))
+            {
+                AddMessage("Another player is standing there.");
+                return false;
+            }
+
             if (targetTile.Enemy != null)
             {
                 StartCombat(targetTile.Enemy);
                 return true;
             }
 
-            Player.MoveTo(next);
+            player.MoveTo(next);
             return true;
+        }
+
+        private static bool IsOccupiedByOtherPlayer(Vec2 next, Player movingPlayer, IEnumerable<Player>? otherPlayers)
+        {
+            if (otherPlayers == null)
+                return false;
+
+            foreach (var player in otherPlayers)
+            {
+                if (!ReferenceEquals(player, movingPlayer) && player.Pos.X == next.X && player.Pos.Y == next.Y)
+                    return true;
+            }
+
+            return false;
         }
 
         public bool TryPickUpItem()
         {
-            var tile = GetTile(Player.Pos.Y, Player.Pos.X);
+            return TryPickUpItem(Player);
+        }
+
+        public bool TryPickUpItem(Player player)
+        {
+            var tile = GetTile(player.Pos.Y, player.Pos.X);
             var item = tile.Item;
 
             if (item == null)
@@ -725,7 +791,7 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            if (item.TryCollect(Player, out var collectMessage))
+            if (item.TryCollect(player, out var collectMessage))
             {
                 tile.Item = null;
                 AddMessage(collectMessage);
@@ -738,11 +804,11 @@ namespace RPG_GAME.Model
             }
 
             if (!item.CanEquip)
-                return TryStoreFromTile(tile, item, $"Picked up {item.Name}.");
+                return TryStoreFromTile(player, tile, item, $"Picked up {item.Name}.");
 
-            if (TryEquipWeapon(item))
+            if (TryEquipWeapon(player, item))
             {
-                ApplyWeaponBonuses(item);
+                ApplyWeaponBonuses(player, item);
                 tile.Item = null;
                 AddMessage($"Equipped {item.Name}.");
 
@@ -752,33 +818,33 @@ namespace RPG_GAME.Model
                 return true;
             }
 
-            var stored = TryStoreFromTile(tile, item, $"Stored {item.Name} in backpack.");
+            var stored = TryStoreFromTile(player, tile, item, $"Stored {item.Name} in backpack.");
             if (stored && NoiseEmitter != null)
                 NoiseOnPickupHook.OnItemPickedUp(this, item, NoiseEmitter);
 
             return stored;
         }
 
-        private int GetOneHandEquipSlot()
+        private int GetOneHandEquipSlot(Player player)
         {
-            if (Player.Inventory.HasTwoHandedWeapon)
+            if (player.Inventory.HasTwoHandedWeapon)
                 return 0;
 
-            if (Player.Inventory.LeftHand == null)
+            if (player.Inventory.LeftHand == null)
                 return 0;
 
-            if (Player.Inventory.RightHand == null)
+            if (player.Inventory.RightHand == null)
                 return 1;
 
             return 0;
         }
 
-        private Items? ResolveActiveWeapon()
+        private Items? ResolveActiveWeapon(Player player)
         {
-            if (Player.Inventory.LeftHand != null)
-                return Player.Inventory.LeftHand;
+            if (player.Inventory.LeftHand != null)
+                return player.Inventory.LeftHand;
 
-            return Player.Inventory.RightHand;
+            return player.Inventory.RightHand;
         }
 
         private void StartCombat(Enemy enemy)
@@ -788,6 +854,11 @@ namespace RPG_GAME.Model
         }
 
         public bool TryCombatRound(string attackKey)
+        {
+            return TryCombatRound(Player, attackKey);
+        }
+
+        public bool TryCombatRound(Player player, string attackKey)
         {
             if (ActiveEnemy == null)
             {
@@ -801,9 +872,9 @@ namespace RPG_GAME.Model
                 return false;
             }
 
-            var weapon = ResolveActiveWeapon();
+            var weapon = ResolveActiveWeapon(player);
             var enemyBeforeRound = ActiveEnemy;
-            var result = _combatEngine.ExecuteRound(Player, enemyBeforeRound, attackType, weapon);
+            var result = _combatEngine.ExecuteRound(player, enemyBeforeRound, attackType, weapon);
             AddMessage(result.Summary);
             AddMessage($"Player attack dealt {result.PlayerDamageDealt} damage.");
             AddMessage($"Enemy attack dealt {result.EnemyDamageDealt} damage.");
@@ -817,7 +888,7 @@ namespace RPG_GAME.Model
 
                 RemoveEnemyFromMap(enemyBeforeRound);
                 SpawnVictoryLoot(defeatedPos);
-                Player.Heal(50);
+                player.Heal(50);
                 ActiveEnemy = null;
                 AddMessage("Enemy removed from map.");
                 AddMessage($"Enemy defeated: {enemyBeforeRound.Name}.");
@@ -832,5 +903,22 @@ namespace RPG_GAME.Model
 
             return true;
         }
+
+        public bool HasAllEnemiesBeenDefeated()
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    if (_tiles[y, x].Enemy != null)
+                        return false;
+                }
+            }
+
+            return true;
+        }
     }
 }
+
+    
+

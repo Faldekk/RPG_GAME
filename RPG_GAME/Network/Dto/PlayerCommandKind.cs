@@ -1,0 +1,34 @@
+namespace RPG_GAME.Network.Dto
+{
+    public enum PlayerCommandKind
+    {
+        None,
+        MoveUp,
+        MoveDown,
+        MoveLeft,
+        MoveRight,
+        PickUp,
+        BackpackAction,
+        SwapWeapons,
+        DropLeftHand,
+        DropRightHand,
+        OpenInventory,
+        OpenJournal,
+        InventoryUp,
+        InventoryDown,
+        InventoryEquip,
+        InventoryDrop,
+        InventoryUse,
+        InventoryCraftArmor,
+        CraftingSelectFirst,
+        CraftingSelectSecond,
+        CraftingCombine,
+        CraftingCancel,
+        CombatNormalAttack,
+        CombatStealthAttack,
+        CombatMagicalAttack,
+        DeathRespawn,
+        CloseInventory,
+        Quit
+    }
+}

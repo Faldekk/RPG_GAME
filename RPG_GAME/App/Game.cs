@@ -1,8 +1,10 @@
 using RPG_GAME.App.Configuration;
 using RPG_GAME.App.Logging;
+using RPG_GAME.Controller;
 using RPG_GAME.Model;
 using RPG_GAME.Model.DungeonThemes;
 using RPG_GAME.UI;
+using RPG_GAME.View;
 
 namespace RPG_GAME.App
 {
@@ -14,6 +16,7 @@ namespace RPG_GAME.App
         private readonly InMemoryGameLogger _journalLogger;
         private readonly RecentEntriesLogger _recentLogger;
         private readonly FileGameLogger _fileLogger;
+        private readonly RPG_GAME.Model.GameTimer _timer;
 
         public Game(GameConfig config)
         {
@@ -27,13 +30,17 @@ namespace RPG_GAME.App
 
             var theme = DungeonThemeFactory.CreateRandom();
             _world = new World(theme);
+            _timer = new RPG_GAME.Model.GameTimer();
             var renderer = new Renderer();
-            var input = new Input();
+            var view = new ConsoleGameView(renderer);
+            var input = new RPG_GAME.App.Input();
+            var controller = new RPG_GAME.Controller.LocalConsoleController(input);
             var state = new GameState();
+            state.Timer = _timer;
             var commandPipeline = BuildCommandPipeline();
             var dispatcher = new GameModeDispatcher(commandPipeline);
 
-            _gameLoop = new GameLoop(_world, renderer, input, dispatcher, state);
+            _gameLoop = new GameLoop(_world, view, controller, dispatcher, state);
         }
 
         public void Run()

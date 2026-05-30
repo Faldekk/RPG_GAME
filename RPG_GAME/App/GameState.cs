@@ -5,6 +5,7 @@ namespace RPG_GAME.App
         public GameMode CurrentMode { get; set; } = GameMode.Normal;
         public int SelectedInventoryIndex { get; set; }
         public int CraftingFirstSelection { get; set; } = -1;
+        public RPG_GAME.Model.GameTimer? Timer { get; set; }
 
         public void ResetForMode(GameMode newMode)
         {
