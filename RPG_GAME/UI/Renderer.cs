@@ -486,7 +486,7 @@ namespace RPG_GAME.UI
             {
                 string timeStr = $"Time: {timer.FormatTime()}";
                 int timeCol = centerCol - timeStr.Length / 2;
-                _buffer.PutString(centerRow, timeCol, timeStr);
+                _buffer.PutString(centerRow, timeCol, "║" + timeStr + "║");
             }
 
             _buffer.PutString(centerRow + 1, centerCol - 10, "║                    ║");
