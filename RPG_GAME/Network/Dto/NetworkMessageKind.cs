@@ -2,10 +2,10 @@ namespace RPG_GAME.Network.Dto
 {
     public enum NetworkMessageKind
     {
-        Hello,
-        State,
+        AssignPlayer,
         Command,
-        ServerNotice,
+        State,
+        Error,
         Disconnect
     }
 }

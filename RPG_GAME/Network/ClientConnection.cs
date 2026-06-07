@@ -17,19 +17,27 @@ namespace RPG_GAME.Network
 
         public ClientConnection(TcpClient client, int playerId)
         {
-            _client = client;
+            _client = client ?? throw new ArgumentNullException(nameof(client));
             PlayerId = playerId;
-            var stream = client.GetStream();
+
+            var stream = _client.GetStream();
+
             _reader = new StreamReader(stream);
-            _writer = new StreamWriter(stream) { AutoFlush = true };
+            _writer = new StreamWriter(stream)
+            {
+                AutoFlush = true
+            };
         }
 
-        public Task SendAsync(NetworkMessageDto message, CancellationToken cancellationToken = default)
+        public Task SendAsync(
+            NetworkMessageDto message,
+            CancellationToken cancellationToken = default)
         {
             return JsonMessageProtocol.WriteAsync(_writer, message, cancellationToken);
         }
 
-        public Task<NetworkMessageDto?> ReceiveAsync(CancellationToken cancellationToken = default)
+        public Task<NetworkMessageDto?> ReceiveAsync(
+            CancellationToken cancellationToken = default)
         {
             return JsonMessageProtocol.ReadAsync(_reader, cancellationToken);
         }
@@ -39,6 +47,7 @@ namespace RPG_GAME.Network
             _writer.Dispose();
             _reader.Dispose();
             _client.Close();
+
             return ValueTask.CompletedTask;
         }
     }

@@ -21,9 +21,7 @@ namespace RPG_GAME.Model
             _nextPlayerId = 2;
         }
 
-        public World World => _world;
-
-        public GameTimer Timer => _timer;
+        public World GameWorld => _world;
 
         public IReadOnlyDictionary<int, Player> Players => _players;
 
@@ -44,12 +42,17 @@ namespace RPG_GAME.Model
             return playerId;
         }
 
-        public bool RemovePlayer(int playerId)
-        {
+       public bool RemovePlayer(int playerId){
             if (playerId == 1)
                 return false;
 
             return _players.Remove(playerId);
+            }
+
+        public bool UnregisterPlayer(int playerId)
+        {
+        return RemovePlayer(playerId);
+
         }
 
         public bool ApplyCommand(PlayerCommandDto command)
